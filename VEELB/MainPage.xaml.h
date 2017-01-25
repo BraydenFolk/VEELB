@@ -64,5 +64,7 @@ namespace VEELB
 		void VEELB::MainPage::UpdateImage(const cv::Mat& image);
 		void VEELB::MainPage::CameraFeed();
 		void returnBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+		void ScreenSaverGrid_Tapped(Platform::Object^ sender, Windows::UI::Xaml::Input::TappedRoutedEventArgs^ e);
+		void exitWebcamBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 	};
 }

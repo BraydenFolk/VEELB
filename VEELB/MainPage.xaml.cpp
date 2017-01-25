@@ -21,6 +21,8 @@
 #include <math.h>
 #include <string.h>
 #include <stdlib.h>
+//#include <sqlite3.h>
+//#include <winsqlite/winsqlite3.h>
 
 using namespace VEELB;
 using namespace Platform;
@@ -210,6 +212,12 @@ void VEELB::MainPage::CameraFeed()
 	}
 }
 
+void VEELB::MainPage::exitWebcamBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
+{
+	WebcamFeedGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
+	MainGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;
+}
+
 // Event handlers
 // TODO: Remove
 void VEELB::MainPage::Page_Loaded(Object^ sender, RoutedEventArgs^ e)
@@ -318,6 +326,7 @@ void VEELB::MainPage::clearBtn_Click(Platform::Object^ sender, Windows::UI::Xaml
 
 void VEELB::MainPage::returnBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
+	// TODO: validate string and cast to int
 	job = ref new JobViewModel(jobNumInt);
 }
 
@@ -325,5 +334,8 @@ int main()
 {
 }
 
-
-
+void VEELB::MainPage::ScreenSaverGrid_Tapped(Platform::Object^ sender, Windows::UI::Xaml::Input::TappedRoutedEventArgs^ e)
+{
+	MainGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;
+	ScreenSaverGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
+}
