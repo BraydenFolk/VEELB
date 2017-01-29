@@ -6,6 +6,7 @@
 #pragma once
 
 #include "MainPage.g.h"
+#include "JobViewModel.h"
 #include <opencv2\core\core.hpp>
 using namespace VEELB;
 using namespace Platform;
@@ -36,9 +37,13 @@ namespace VEELB
 	{
 	public:
 		MainPage();
-	private:
+	private: // Properties
 		cv::Mat _stored_image;
+		Platform::String^ jobNumString;
+		int jobNumInt;
+		WriteableBitmap^ ImageSource = ref new WriteableBitmap(4, 5);
 	private:
+		// Event handlers
 		void Page_Loaded(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 		void initBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 		void enterJobNumberBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
@@ -54,9 +59,15 @@ namespace VEELB
 		void zeroBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 		void backspaceBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 		void clearBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
-		void Button_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+		void enterBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+
+		// UI Functions
 		void VEELB::MainPage::UpdateImage(const cv::Mat& image);
 		void VEELB::MainPage::CameraFeed();
-		WriteableBitmap^ ImageSource = ref new WriteableBitmap(4, 5);
+		void ScreenSaverGrid_Tapped(Platform::Object^ sender, Windows::UI::Xaml::Input::TappedRoutedEventArgs^ e);
+		void exitWebcamBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+
+		// Platform::String^ conversion
+		Platform::String^ convertStringToPlatformString(string inputString);
 	};
 }
