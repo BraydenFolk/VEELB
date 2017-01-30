@@ -6,6 +6,7 @@
 
 #include "pch.h"
 #include "MainPage.xaml.h"
+#include "SerialCommsViewModel.h"
 #include <opencv2\imgproc\types_c.h>
 #include <opencv2\imgcodecs\imgcodecs.hpp>
 #include <opencv2\core\core.hpp>
@@ -69,6 +70,8 @@ JobViewModel^ job;
 MainPage::MainPage()
 {
 	InitializeComponent();
+	_serialViewModel = ref new SerialCommsViewModel;
+	_serialViewModel->ConnectToTracer();
 }
 
 // Webcam functions
@@ -308,13 +311,20 @@ void VEELB::MainPage::zeroBtn_Click(Platform::Object^ sender, Windows::UI::Xaml:
 void VEELB::MainPage::backspaceBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
 	Platform::String^ number = jobIdNumTxtBlock->Text;
-	if (number == "")
+	if (number->Length() > 0)
 	{
-		wstring tempw(number->Begin());
-		string jobIdStdString(tempw.begin(), tempw.end() - 1);
+		string jobIdStdString = convertPlatformStringToStandardString(number);
+		//jobIdStdString = jobIdStdString.substr(0, jobIdStdString.length - 1);
 		jobIdNumTxtBlock->Text = convertStringToPlatformString(jobIdStdString);
 		jobNumString = jobIdNumTxtBlock->Text;
 	}
+}
+
+string VEELB::MainPage::convertPlatformStringToStandardString(Platform::String^ inputString)
+{
+	wstring tempw(inputString->Begin());
+	string jobIdStdString(tempw.begin(), tempw.end() - 1);
+	return jobIdStdString;
 }
 
 Platform::String^ VEELB::MainPage::convertStringToPlatformString(string inputString)
@@ -340,8 +350,8 @@ void VEELB::MainPage::clearBtn_Click(Platform::Object^ sender, Windows::UI::Xaml
 
 void VEELB::MainPage::enterBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
-	//string temp = jobIdNumTxtBlock->Text->ToString;
-	job = ref new JobViewModel(jobNumInt);
+	//string jobNum = convertPlatformStringToStandardString(jobIdNumTxtBlock->Text);
+	job = ref new JobViewModel(jobIdNumTxtBlock->Text, _serialViewModel);
 }
 
 

@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "SerialCommsViewModel.h"
-//#include "Device.h"
+#include "Device.h"
+#include "MainPage.xaml.h"
+#include "JobViewModel.h"
 
 using namespace VEELB;
 using namespace Windows::ApplicationModel::Background;
@@ -8,7 +10,6 @@ using namespace Windows::Foundation;
 using namespace Windows::Storage;
 using namespace Windows::System::Threading;
 
-using namespace Platform;
 using namespace Windows::Foundation::Collections;
 using namespace Windows::UI::Xaml;
 using namespace Windows::UI::Xaml::Controls;
@@ -18,34 +19,53 @@ using namespace Windows::UI::Xaml::Input;
 using namespace Windows::UI::Xaml::Media;
 using namespace Windows::UI::Xaml::Navigation;
 using namespace Concurrency;
+using namespace std;
+
+void SerialCommsViewModel::ConnectToTracer()
+{
+	/*_availableDevices = ref new Platform::Collections::Vector<Platform::Object^>();
+	ListAvailablePorts();
+
+	Device^ selectedDevice = static_cast<Device^>(_availableDevices->GetAt(0));
+	Windows::Devices::Enumeration::DeviceInformation ^entry = selectedDevice->DeviceInfo;
+
+	concurrency::create_task(ConnectToSerialDeviceAsync(entry, cancellationTokenSource->get_token()));*/
+}
+
+void SerialCommsViewModel::sendJob(Platform::String^ jobNum)
+{
+	_availableDevices = ref new Platform::Collections::Vector<Platform::Object^>();
+	ListAvailablePorts(); // This method makes it break
+
+	Device^ selectedDevice = static_cast<Device^>(_availableDevices->GetAt(0));
+	Windows::Devices::Enumeration::DeviceInformation ^entry = selectedDevice->DeviceInfo;
+
+	concurrency::create_task(ConnectToSerialDeviceAsync(entry, cancellationTokenSource->get_token()));
+
+	WriteAsync(cancellationTokenSource->get_token(), jobNum);
+}
 
 /// <summary>
-/// Finds all serial devices available on the device and populates a ListBox with the Ids of each device.
+/// Finds all serial devices available on the device and populates a list with the Ids of each device.
 /// </summary>
 void SerialCommsViewModel::ListAvailablePorts(void)
 {
-	cancellationTokenSource = new Concurrency::cancellation_token_source();
-
-	//using asynchronous operation, get a list of serial devices available on this device
+	// Using asynchronous operation, get a list of serial devices available on this device
 	Concurrency::create_task(ListAvailableSerialDevicesAsync()).then([this](Windows::Devices::Enumeration::DeviceInformationCollection ^serialDeviceCollection)
 	{
+		/**** The program execution does not enter this code and I can't figure out why. Copy and pasted the SerialSample code which worked perfectly*/
 		Windows::Devices::Enumeration::DeviceInformationCollection ^_deviceCollection = serialDeviceCollection;
 
 		// start with an empty list
-		//_availableDevices->Clear();
+		_availableDevices->Clear();
 
-		//for (auto &&device : _deviceCollection)
-		//{
-		//	if (IsTracer(device->Id))
-		//		_availableDevices->Append(ref new Device("Surface", device));
-		//	else
-		//		_availableDevices->Append(ref new Device("Unboard UART", device));
-
-		//	//	ConnectToSerialDeviceAsync(device, cancellationTokenSource->get_token());
-		//}
-
+		for (auto &&device : serialDeviceCollection)
+		{
+			_availableDevices->Append(ref new Device(device->Id, device));
+		}
 	});
 }
+
 /// <Summary>
 /// Determines if the device Id corresponds to the Tracer or another type of serial device since more
 /// devices may be connected to the Pi in the future for the company as they add features to their overall
@@ -116,10 +136,9 @@ Concurrency::task<void> SerialCommsViewModel::ConnectToSerialDeviceAsync(Windows
 /// <summary>
 /// Returns a task that sends the outgoing data from the sendText textbox to the output stream. 
 /// </summary
-Concurrency::task<void> SerialCommsViewModel::WriteAsync(Concurrency::cancellation_token cancellationToken)
+Concurrency::task<void> SerialCommsViewModel::WriteAsync(Concurrency::cancellation_token cancellationToken, Platform::String^ messageToSend)
 {
-	Platform::String^ messageToSend = "Petra";//*0x88 in dec*/ CreateChecksum("jhk");
-	_dataWriterObject->WriteString(messageToSend);// sendText->Text);
+	_dataWriterObject->WriteString(messageToSend);
 
 	return concurrency::create_task(_dataWriterObject->StoreAsync(), cancellationToken).then([this](unsigned int bytesWritten)
 	{
