@@ -7,6 +7,7 @@
 
 #include "MainPage.g.h"
 #include "JobViewModel.h"
+#include "SerialCommsViewModel.h"
 #include <opencv2\core\core.hpp>
 using namespace VEELB;
 using namespace Platform;
@@ -42,6 +43,7 @@ namespace VEELB
 		Platform::String^ jobNumString;
 		int jobNumInt;
 		WriteableBitmap^ ImageSource = ref new WriteableBitmap(4, 5);
+		SerialCommsViewModel^ _serialViewModel;
 	private:
 		// Event handlers
 		void Page_Loaded(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
@@ -68,6 +70,7 @@ namespace VEELB
 		void exitWebcamBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 
 		// Platform::String^ conversion
+		string convertPlatformStringToStandardString(Platform::String^ inputString);
 		Platform::String^ convertStringToPlatformString(string inputString);
 	};
 }
