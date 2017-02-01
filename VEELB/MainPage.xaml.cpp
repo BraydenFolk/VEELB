@@ -37,6 +37,8 @@ using namespace Windows::UI::Xaml::Input;
 using namespace Windows::UI::Xaml::Media;
 using namespace Windows::UI::Xaml::Navigation;
 
+using namespace Windows::Storage;
+
 using namespace Windows::UI::Xaml::Media::Imaging;
 using namespace Windows::Storage::Streams;
 using namespace Microsoft::WRL;
@@ -61,14 +63,20 @@ cv::Rect objectBoundingRectangle = cv::Rect(0, 0, 0, 0);
 int radius = 0;
 int detectType = 0;
 VideoCapture cam;
-const int xPos = 235;
-const int yPos = 235;
+int xPos = 235;
+int yPos = 235;
 JobViewModel^ job;
-
+bool onExit = false;
+auto itemCollection = ref new Platform::Collections::Vector<Object^>();
 
 MainPage::MainPage()
 {
 	InitializeComponent();
+
+	/*Windows::ApplicationModel::Email::EmailMessage^ temp = ref new Windows::ApplicationModel::Email::EmailMessage();
+	
+	StorageFile^ attachmentFile;
+	Windows::Storage::Streams::RandomAccessStreamReference^ stream = Windows::Storage::Streams::RandomAccessStreamReference::CreateFromFile(attachmentFile);*/
 }
 
 // Webcam functions
@@ -77,7 +85,10 @@ void cvVideoTask()
 	cv::Mat frame, oldFrame, tmp, grayScale, canny, canny_output;
 
 	vector<vector<cv::Point> > contours;
-		vector<Vec4i> hierarchy;
+	vector<Vec4i> hierarchy;
+
+	/*xPos = job->getXPosition;
+	yPos = job->getYPosition;*/
 
 	cam.open(0);
 	while (1)
@@ -93,8 +104,15 @@ void cvVideoTask()
 			tmp.copyTo(oldFrame);
 			cv::winrt_imshow();
 		}
+
+		if (onExit)
+		{
+			break;
+		}
 		
 	}
+
+	cam.release();
 }
 
 int seuil = 10;
@@ -182,38 +200,52 @@ void VEELB::MainPage::CameraFeed()
 	vector<vector<cv::Point> > contours;
 	vector<Vec4i> hierarchy;
 
+	VideoCapture cap;
+
 	RNG rng(12345);
 
-	cam.open(0);
-	while (1)
+	try
 	{
-		if (!cam.grab()) continue;
-		cam >> src;
-
-		if (src.rows == 0 || src.cols == 0)
+		cap.open(0);
+		cap >> src;
+		winrt_imshow();
+		Sleep(5000);
+		while (1)
 		{
-			continue;
+			if (!cap.grab()) continue;
+			cap >> src;
+
+			if (src.rows == 0 || src.cols == 0)
+			{
+				continue;
+			}
+
+			cvtColor(src, src_gray, CV_BGR2GRAY); // convert to grayscale
+			blur(src_gray, src_gray, cv::Size(3, 3)); // blur converted mat
+
+			Canny(src_gray, canny_output, thresh, thresh * 2, 3); // apply canny filter to image
+			findContours(canny_output, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
+
+			Mat drawing = Mat::zeros(canny_output.size(), CV_8UC3);
+			for (int i = 0; i < contours.size(); i++)
+			{
+				Scalar color = Scalar(rng.uniform(0, 255), rng.uniform(0, 255), rng.uniform(0, 255));
+				drawContours(drawing, contours, i, color, 2, 8, hierarchy, 0, cv::Point());
+			}
+
+			UpdateImage(drawing);
 		}
+	}
+	catch (...)
+	{
 
-		cvtColor(src, src_gray, CV_BGR2GRAY); // convert to grayscale
-		blur(src_gray, src_gray, cv::Size(3, 3)); // blur converted mat
-
-		Canny(src_gray, canny_output, thresh, thresh * 2, 3); // apply canny filter to image
-		findContours(canny_output, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
-
-		Mat drawing = Mat::zeros(canny_output.size(), CV_8UC3);
-		for (int i = 0; i< contours.size(); i++)
-		{
-			Scalar color = Scalar(rng.uniform(0, 255), rng.uniform(0, 255), rng.uniform(0, 255));
-			drawContours(drawing, contours, i, color, 2, 8, hierarchy, 0, cv::Point());
-		}
-
-		UpdateImage(drawing);
 	}
 }
 
 void VEELB::MainPage::exitWebcamBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
+	onExit = true;
+
 	WebcamFeedGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
 	MainGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;
 }
@@ -230,10 +262,30 @@ void VEELB::MainPage::initBtn_Click(Platform::Object^ sender, Windows::UI::Xaml:
 	MainGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
 	WebcamFeedGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;
 
-	//winrt_setFrameContainer(imgCV); 
-	//winrt_startMessageLoop(cvVideoTask);	
+	winrt_setFrameContainer(imgCV); 
+	winrt_startMessageLoop(cvVideoTask);
 
-	CameraFeed();
+	onExit = false;
+	//CameraFeed();
+}
+
+void VEELB::MainPage::screenSaverAnimation()
+{//rows 768, cols 432
+
+	screenSaverImg->Visibility = Windows::UI::Xaml::Visibility::Visible;
+	while (1)
+	{
+		for (int i = 0; i < 760; i = i + 10)
+		{
+			for (int j = 0; j < 430; j = j + 2)
+			{
+				//(left, top, right, bottom);
+				
+				screenSaverImg->Margin = Thickness((double)j, (double)i, (double)(432-j), (double)(768-0));
+				Sleep(1000);
+			}
+		}
+	}
 }
 
 // TODO: finish
@@ -314,20 +366,47 @@ void VEELB::MainPage::zeroBtn_Click(Platform::Object^ sender, Windows::UI::Xaml:
 
 void VEELB::MainPage::backspaceBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
+	// TODO: implement
+	/*Platform::String^ temp = jobIdNumTxtBlock->Text;
+	std::wstring s(temp->Data());
+
+	std::string str = s.data;
+
+	str = str.substr(0, str.length - 1);*/
+
+	//temp = str.c_str();
+
+	//jobIdNumTxtBlock->Text = 
+
+	//Platform::String^ str8 = ref new Platform::String(msg);
 }
 
 
 void VEELB::MainPage::clearBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
-	jobIdNumTxtBlock->Text += "";
+	jobIdNumTxtBlock->Text = "";
 	jobNumString = jobIdNumTxtBlock->Text;
 }
 
 
 void VEELB::MainPage::returnBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
-	// TODO: validate string and cast to int
-	job = ref new JobViewModel(jobNumInt);
+	// TODO: validate string ?
+	//jobNumInt = _wtoi(jobNumString->Data());
+
+	//job = ref new JobViewModel(jobNumInt);
+
+	// TODO: save last returned number
+	mainGridJobNumberTxtBlk->Text = "Job number for session: " + jobNumString;
+	
+	JobNumberGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
+	MainGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;
+
+	/*TextBlock^ txtBlock = ref new TextBlock();
+	ListBoxItem^ item = ref new ListBoxItem();
+	auto style = App::Current->Resources->Lookup("ListItemTextStyle");*/
+
+	// TODO: implement necessary functions in console
 }
 
 int main() 
@@ -336,6 +415,51 @@ int main()
 
 void VEELB::MainPage::ScreenSaverGrid_Tapped(Platform::Object^ sender, Windows::UI::Xaml::Input::TappedRoutedEventArgs^ e)
 {
-	MainGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;
 	ScreenSaverGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
+	MainGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;
+}
+
+void VEELB::MainPage::toggleHistoryBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
+{
+	if (historyGrid->Visibility == Windows::UI::Xaml::Visibility::Visible)
+	{
+		historyGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
+	}
+	else
+	{
+		historyGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;
+	}
+}
+
+
+void VEELB::MainPage::startBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
+{
+	SplashScreenGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
+	MainGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;
+}
+
+
+void VEELB::MainPage::exitJobNumberBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
+{
+	JobNumberGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
+	MainGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;
+
+	// TODO: retrieve last job 
+}
+
+
+void VEELB::MainPage::sleepBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
+{
+	MainGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
+	ScreenSaverGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;
+	screenSaverImg->Visibility = Windows::UI::Xaml::Visibility::Visible;
+
+
+	screenSaverAnimation();
+}
+
+
+void VEELB::MainPage::settingsWebcamBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
+{
+	WebcamSplitter->IsPaneOpen = !WebcamSplitter->IsPaneOpen;
 }

@@ -8,6 +8,9 @@ namespace VEELB
 		void Start(Windows::ApplicationModel::Background::IBackgroundTaskInstance^ taskInstance);
 		JobViewModel(int jobNumber);
 		JobViewModel();
+		int getJobNumber();
+		int getXPosition();
+		int getYPosition();
 	private:
 		int jobNumber;
 		double xPosition;
