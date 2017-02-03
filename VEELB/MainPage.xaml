@@ -8,7 +8,7 @@
     mc:Ignorable="d" Loaded="Page_Loaded">
 
     <Grid Background="Black">
-        <Grid x:Name="SplashScreenGrid" Visibility="Visible" Background="#FF212121">
+        <Grid x:Name="SplashScreenGrid" Visibility="Collapsed" Background="#FF212121">
             <Grid.RowDefinitions>
                 <RowDefinition Height="75"/>
                 <RowDefinition Height="100"/>
@@ -51,7 +51,7 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="75"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock Grid.Row="0" Text="Innovative Optical Solutions (IOS)" Foreground="White" FontSize="20" Margin="15,10,0,0"/>
+                <TextBlock Grid.Row="0" Text="Innovative Optical Systems (IOS)" Foreground="White" FontSize="20" Margin="15,10,0,0"/>
                 <Button x:Name="sleepBtn" Background="#FF2C5B9B" Canvas.ZIndex="-1" FontSize="20" Foreground="White"  HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Grid.Column="1" Click="sleepBtn_Click">
                     <Image Source="close.png" />
                 </Button>
@@ -83,7 +83,7 @@
                 <Button x:Name="detect" Content="detect" HorizontalAlignment="Left" VerticalAlignment="Top" Width="100" Canvas.ZIndex="-2" Background="#FFCB7979" Click="detect_Click"/>
             </StackPanel>-->
         </Grid>
-        <Grid x:Name="JobNumberGrid" Visibility="Collapsed" Background="#FF212121">
+        <Grid x:Name="JobNumberGrid" Visibility="Visible" Background="#FF212121">
             <Grid.RowDefinitions>
                 <RowDefinition Height="50"/>
                 <RowDefinition Height="2"/>
@@ -96,10 +96,7 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="75"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock Grid.Row="0" Text="Innovative Optical Solutions (IOS)" Foreground="White" FontSize="20" Margin="15,10,10,0"/>
-                <Button x:Name="exitJobNumberBtn" Background="#FF2C5B9B" Canvas.ZIndex="-1" FontSize="20" Foreground="White"  HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Grid.Column="1" Click="exitJobNumberBtn_Click">
-                    <Image Source="close.png" />
-                </Button>
+                <TextBlock Grid.Row="0" Text="Innovative Optical Systems (IOS)" Foreground="White" FontSize="20" Margin="15,10,10,0"/>
             </Grid>
             <Grid Grid.Row="2" Background="#FF3F3F3F">
                 <TextBlock x:Name="jobIdNumTxtBlock"  Text="" Foreground="White" FontSize="72" TextAlignment="Center"/>
@@ -129,15 +126,15 @@
                 <Button x:Name="fourBtn" Margin="0,0.4,1.8,0.2" Grid.ColumnSpan="2" Grid.Row="2" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Foreground="#FFFEFEFE" Content="4" FontSize="36" Click="fourBtn_Click" Background="#FF2C5B9B" />
                 <Button x:Name="fiveBtn" Margin="0.2,0.4,1.6,0.2" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Grid.ColumnSpan="2" Grid.Column="2" Grid.Row="2" Foreground="#FFFEFEFE" Content="5" FontSize="36" Click="fiveBtn_Click" Background="#FF2C5B9B"/>
                 <Button x:Name="sixBtn" Margin="0.4,0.4,0,0.2" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Grid.Column="4" Grid.Row="2" Foreground="#FFFEFEFE" Content="6" FontSize="36" Click="sixBtn_Click"  Background="#FF2C5B9B"  />
-                <Button x:Name="sevenBtn" Margin="0,1.8,1.8,1.8" Grid.ColumnSpan="2" Grid.Row="3" Grid.RowSpan="3" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Foreground="#FFFEFEFE" Content="7" FontSize="36" Click="sevenBtn_Click"  Background="#FF2C5B9B" />
-                <Button x:Name="eightBtn" Margin="0.2,1.8,1.6,1.8" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Grid.ColumnSpan="2" Grid.Column="2" Grid.Row="3" Grid.RowSpan="3" Foreground="#FFFEFEFE" Content="8" FontSize="36" Click="eightBtn_Click"  Background="#FF2C5B9B"/>
-                <Button x:Name="nineBtn" Margin="0.4,1.8,0,1.8" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Grid.Column="4" Grid.Row="3" Grid.RowSpan="3" Foreground="#FFFEFEFE" Content="9" FontSize="36" Click="nineBtn_Click"  Background="#FF2C5B9B" />
-                <Button x:Name="zeroBtn" Margin="0.2,0.2,1.6,0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Grid.ColumnSpan="2" Grid.Column="2" Grid.Row="6" Foreground="#FFFEFEFE" Content="0" FontSize="36" Click="zeroBtn_Click" Background="#FF2C5B9B"  />
+                <Button x:Name="sevenBtn" Margin="0,1.4,1.8,1.8" Grid.ColumnSpan="2" Grid.Row="3" Grid.RowSpan="3" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Foreground="#FFFEFEFE" Content="7" FontSize="36" Click="sevenBtn_Click"  Background="#FF2C5B9B" />
+                <Button x:Name="eightBtn" Margin="0.2,1.4,1.6,1.8" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Grid.ColumnSpan="2" Grid.Column="2" Grid.Row="3" Grid.RowSpan="3" Foreground="#FFFEFEFE" Content="8" FontSize="36" Click="eightBtn_Click"  Background="#FF2C5B9B"/>
+                <Button x:Name="nineBtn" Margin="0.4,1.4,0,1.8" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Grid.Column="4" Grid.Row="3" Grid.RowSpan="3" Foreground="#FFFEFEFE" Content="9" FontSize="36" Click="nineBtn_Click"  Background="#FF2C5B9B" />
+                <Button x:Name="zeroBtn" Margin="0.2,0.4,1.6,0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Grid.ColumnSpan="2" Grid.Column="2" Grid.Row="6" Foreground="#FFFEFEFE" Content="0" FontSize="36" Click="zeroBtn_Click" Background="#FF2C5B9B"  />
                 <Button x:Name="backspaceBtn" Margin="0,1,0,1.6" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Grid.Column="6" Grid.RowSpan="2"  Foreground="#FFFEFEFE" FontSize="36" Click="backspaceBtn_Click"  Background="#FF2C5B9B" >
                     <Image Source="back.png"  />
                 </Button>
                 <Button x:Name="clearBtn" Margin="0,0.4,0,0.2" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Grid.Column="6" Grid.Row="2" Foreground="#FFFEFEFE" Content="C" FontSize="40" Click="clearBtn_Click" Background="#FFA2322E" FontWeight="Bold" />
-                <Button x:Name="returnBtn" Margin="0,0.2" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Grid.Column="6" Grid.Row="4" Foreground="White" FontSize="36"  Background="#FF45CD59" Click="returnBtn_Click" >
+                <Button x:Name="returnBtn" Margin="0,-0.8,0,0.2" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Grid.Column="6" Grid.Row="4" Foreground="White" FontSize="36"  Background="#FF45CD59" Click="returnBtn_Click" >
                     <Image x:Name="returnImage" Source="return.png" />
                 </Button>
             </Grid>

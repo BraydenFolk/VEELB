@@ -21,6 +21,7 @@
 #include <math.h>
 #include <string.h>
 #include <stdlib.h>
+#include <codecvt>
 //#include <sqlite3.h>
 //#include <winsqlite/winsqlite3.h>
 
@@ -74,10 +75,14 @@ MainPage::MainPage()
 	InitializeComponent();
 
 	/*Windows::ApplicationModel::Email::EmailMessage^ temp = ref new Windows::ApplicationModel::Email::EmailMessage();
-	
+
 	StorageFile^ attachmentFile;
 	Windows::Storage::Streams::RandomAccessStreamReference^ stream = Windows::Storage::Streams::RandomAccessStreamReference::CreateFromFile(attachmentFile);*/
+
+	_serialViewModel = ref new SerialCommsViewModel;
+	_serialViewModel->ConnectToTracer();
 }
+
 
 // Webcam functions
 void cvVideoTask()
@@ -99,7 +104,7 @@ void cvVideoTask()
 
 		if (frame.rows > 0 && frame.cols > 0)
 		{
-			
+
 			Compare(frame, oldFrame, grayScale);
 			tmp.copyTo(oldFrame);
 			cv::winrt_imshow();
@@ -109,7 +114,7 @@ void cvVideoTask()
 		{
 			break;
 		}
-		
+
 	}
 
 	cam.release();
@@ -183,9 +188,9 @@ void VEELB::MainPage::UpdateImage(const cv::Mat& image)
 
 		// Set the bitmap to the Image element
 		imgCV->Source = bitmap;
-		
+
 	}
-	else 
+	else
 	{
 		printf("Error loading image into buffer\n");
 	}
@@ -242,13 +247,6 @@ void VEELB::MainPage::CameraFeed()
 	}
 }
 
-void VEELB::MainPage::exitWebcamBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
-{
-	onExit = true;
-
-	WebcamFeedGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
-	MainGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;
-}
 
 // Event handlers
 // TODO: Remove
@@ -262,12 +260,83 @@ void VEELB::MainPage::initBtn_Click(Platform::Object^ sender, Windows::UI::Xaml:
 	MainGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
 	WebcamFeedGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;
 
-	winrt_setFrameContainer(imgCV); 
+	winrt_setFrameContainer(imgCV);
 	winrt_startMessageLoop(cvVideoTask);
 
 	onExit = false;
 	//CameraFeed();
 }
+
+// TODO: finish
+void VEELB::MainPage::enterJobNumberBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
+{
+	MainGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
+	JobNumberGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;
+
+//	_serialViewModel->sendJob(jobIdNumTxtBlock->Text);
+
+	/*Windows::Foundation::Collections::IVector<Platform::Object^>^ availableDevices = _serialViewModel->getAvailableDevices();
+	Platform::Object^ temp = availableDevices->GetAt(0);
+
+	Device^ selectedDevice = static_cast<Device^>(availableDevices->GetAt(0));
+	Windows::Devices::Enumeration::DeviceInformation ^entry = selectedDevice->DeviceInfo;
+	Concurrency::cancellation_token_source* cancellationTokenSource = new Concurrency::cancellation_token_source();
+	
+
+	concurrency::create_task(ConnectToSerialDeviceAsync(entry, cancellationTokenSource->get_token()));
+	*/		
+}
+
+/// <summary>
+/// Creates a task chain that attempts connect to a serial device asynchronously. 
+/// </summary
+Concurrency::task<void> MainPage::ConnectToSerialDeviceAsync(Windows::Devices::Enumeration::DeviceInformation ^device, Concurrency::cancellation_token cancellationToken)
+{
+	return Concurrency::create_task(Windows::Devices::SerialCommunication::SerialDevice::FromIdAsync(device->Id), cancellationToken)
+		.then([this](Windows::Devices::SerialCommunication::SerialDevice ^serial_device)
+	{
+		try
+		{
+			_serialPort = serial_device;
+
+			Windows::Foundation::TimeSpan _timeOut;
+			_timeOut.Duration = 10000000L;
+
+			// Configure serial settings
+			_serialPort->WriteTimeout = _timeOut;
+			_serialPort->ReadTimeout = _timeOut;
+			_serialPort->BaudRate = 19200;
+			_serialPort->Parity = Windows::Devices::SerialCommunication::SerialParity::None;
+			_serialPort->StopBits = Windows::Devices::SerialCommunication::SerialStopBitCount::One;
+			_serialPort->DataBits = 8;
+			_serialPort->Handshake = Windows::Devices::SerialCommunication::SerialHandshake::None;
+
+			// setup our data reader for handling incoming data
+			
+		}
+		catch (Platform::Exception ^ex)
+		{
+			// perform any cleanup needed
+			CloseDevice();
+		}
+	});
+}
+
+/// <summary>
+/// Closes the comport currently connected
+/// </summary
+void MainPage::CloseDevice(void)
+{
+	/*delete(_dataReaderObject);
+	_dataReaderObject = nullptr;
+
+	delete(_dataWriterObject);
+	_dataWriterObject = nullptr;
+*/
+	delete(_serialPort);
+	_serialPort = nullptr;
+}
+
 
 void VEELB::MainPage::screenSaverAnimation()
 {//rows 768, cols 432
@@ -280,20 +349,14 @@ void VEELB::MainPage::screenSaverAnimation()
 			for (int j = 0; j < 430; j = j + 2)
 			{
 				//(left, top, right, bottom);
-				
-				screenSaverImg->Margin = Thickness((double)j, (double)i, (double)(432-j), (double)(768-0));
+
+				screenSaverImg->Margin = Thickness((double)j, (double)i, (double)(432 - j), (double)(768 - 0));
 				Sleep(1000);
 			}
 		}
 	}
 }
 
-// TODO: finish
-void VEELB::MainPage::enterJobNumberBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
-{
-	MainGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
-	JobNumberGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;
-}
 
 void VEELB::MainPage::oneBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
@@ -363,31 +426,44 @@ void VEELB::MainPage::zeroBtn_Click(Platform::Object^ sender, Windows::UI::Xaml:
 	jobNumString = jobIdNumTxtBlock->Text;
 }
 
-
 void VEELB::MainPage::backspaceBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
-	// TODO: implement
-	/*Platform::String^ temp = jobIdNumTxtBlock->Text;
-	std::wstring s(temp->Data());
-
-	std::string str = s.data;
-
-	str = str.substr(0, str.length - 1);*/
-
-	//temp = str.c_str();
-
-	//jobIdNumTxtBlock->Text = 
-
-	//Platform::String^ str8 = ref new Platform::String(msg);
+	Platform::String^ number = jobIdNumTxtBlock->Text;
+	if (number->Length() > 0)
+	{
+		string jobIdStdString = convertPlatformStringToStandardString(number);
+		//jobIdStdString = jobIdStdString.substr(0, jobIdStdString.length - 1);
+		jobIdNumTxtBlock->Text = convertStringToPlatformString(jobIdStdString);
+		jobNumString = jobIdNumTxtBlock->Text;
+	}
 }
 
+string VEELB::MainPage::convertPlatformStringToStandardString(Platform::String^ inputString)
+{
+	wstring tempw(inputString->Begin());
+	string jobIdStdString(tempw.begin(), tempw.end() - 1);
+	return jobIdStdString;
+}
+
+Platform::String^ VEELB::MainPage::convertStringToPlatformString(string inputString)
+{
+	wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+	wstring intermediateForm = converter.from_bytes(inputString);
+	Platform::String^ retval = ref new Platform::String(intermediateForm.c_str());
+	return retval;
+}
 
 void VEELB::MainPage::clearBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
-	jobIdNumTxtBlock->Text = "";
+	if (jobIdNumTxtBlock->Text == "")
+	{
+		JobNumberGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
+		MainGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;
+	}
+	else
+		jobIdNumTxtBlock->Text = "";
 	jobNumString = jobIdNumTxtBlock->Text;
 }
-
 
 void VEELB::MainPage::returnBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
@@ -398,7 +474,7 @@ void VEELB::MainPage::returnBtn_Click(Platform::Object^ sender, Windows::UI::Xam
 
 	// TODO: save last returned number
 	mainGridJobNumberTxtBlk->Text = "Job number for session: " + jobNumString;
-	
+
 	JobNumberGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
 	MainGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;
 
@@ -409,9 +485,7 @@ void VEELB::MainPage::returnBtn_Click(Platform::Object^ sender, Windows::UI::Xam
 	// TODO: implement necessary functions in console
 }
 
-int main() 
-{
-}
+
 
 void VEELB::MainPage::ScreenSaverGrid_Tapped(Platform::Object^ sender, Windows::UI::Xaml::Input::TappedRoutedEventArgs^ e)
 {
@@ -439,14 +513,13 @@ void VEELB::MainPage::startBtn_Click(Platform::Object^ sender, Windows::UI::Xaml
 }
 
 
-void VEELB::MainPage::exitJobNumberBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
+void VEELB::MainPage::exitWebcamBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
-	JobNumberGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
+	onExit = true;
+
+	WebcamFeedGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
 	MainGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;
-
-	// TODO: retrieve last job 
 }
-
 
 void VEELB::MainPage::sleepBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
@@ -463,3 +536,8 @@ void VEELB::MainPage::settingsWebcamBtn_Click(Platform::Object^ sender, Windows:
 {
 	WebcamSplitter->IsPaneOpen = !WebcamSplitter->IsPaneOpen;
 }
+
+int main()
+{
+}
+
