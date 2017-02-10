@@ -5,44 +5,13 @@
 #include "JobViewModel.h"
 
 using namespace VEELB;
-using namespace Windows::ApplicationModel::Background;
-using namespace Windows::Foundation;
-using namespace Windows::Storage;
-using namespace Windows::System::Threading;
-
-using namespace Windows::Foundation::Collections;
 using namespace Windows::UI::Xaml;
-using namespace Windows::UI::Xaml::Controls;
-using namespace Windows::UI::Xaml::Controls::Primitives;
-using namespace Windows::UI::Xaml::Data;
-using namespace Windows::UI::Xaml::Input;
-using namespace Windows::UI::Xaml::Media;
-using namespace Windows::UI::Xaml::Navigation;
-using namespace Concurrency;
 using namespace std;
 
-void SerialCommsViewModel::ConnectToTracer()
-{
-	/*_availableDevices = ref new Platform::Collections::Vector<Platform::Object^>();
-	ListAvailablePorts();
-
-	Device^ selectedDevice = static_cast<Device^>(_availableDevices->GetAt(0));
-	Windows::Devices::Enumeration::DeviceInformation ^entry = selectedDevice->DeviceInfo;
-
-	concurrency::create_task(ConnectToSerialDeviceAsync(entry, cancellationTokenSource->get_token()));*/
-}
-
-void SerialCommsViewModel::sendJob(Platform::String^ jobNum)
+void SerialCommsViewModel::ListSerialDevices()
 {
 	_availableDevices = ref new Platform::Collections::Vector<Platform::Object^>();
-	ListAvailablePorts(); // This method makes it break
-
-	Device^ selectedDevice = static_cast<Device^>(_availableDevices->GetAt(0));
-	Windows::Devices::Enumeration::DeviceInformation ^entry = selectedDevice->DeviceInfo;
-
-	concurrency::create_task(ConnectToSerialDeviceAsync(entry, cancellationTokenSource->get_token()));
-
-	WriteAsync(cancellationTokenSource->get_token(), jobNum);
+	ListAvailablePorts();
 }
 
 /// <summary>
@@ -50,12 +19,15 @@ void SerialCommsViewModel::sendJob(Platform::String^ jobNum)
 /// </summary>
 void SerialCommsViewModel::ListAvailablePorts(void)
 {
+//	_availableDevices = ref new Platform::Collections::Vector<Platform::Object^>();
+	cancellationTokenSource = new Concurrency::cancellation_token_source();
+
 	// Using asynchronous operation, get a list of serial devices available on this device
 	Concurrency::create_task(ListAvailableSerialDevicesAsync()).then([this](Windows::Devices::Enumeration::DeviceInformationCollection ^serialDeviceCollection)
 	{
 		/**** The program execution does not enter this code and I can't figure out why. Copy and pasted the SerialSample code which worked perfectly*/
 		Windows::Devices::Enumeration::DeviceInformationCollection ^_deviceCollection = serialDeviceCollection;
-
+		
 		// start with an empty list
 		_availableDevices->Clear();
 
@@ -66,17 +38,6 @@ void SerialCommsViewModel::ListAvailablePorts(void)
 	});
 }
 
-/// <Summary>
-/// Determines if the device Id corresponds to the Tracer or another type of serial device since more
-/// devices may be connected to the Pi in the future for the company as they add features to their overall
-/// system of making lesnes
-bool SerialCommsViewModel::IsTracer(Platform::String^ id)
-{
-	if (id == "\\")
-		return true;
-	else
-		return false;
-}
 
 /// <summary>
 /// An asynchronous operation that returns a collection of DeviceInformation objects for all serial devices detected on the device.
@@ -88,6 +49,15 @@ Windows::Foundation::IAsyncOperation<Windows::Devices::Enumeration::DeviceInform
 
 	// Identify all paired devices satisfying query
 	return Windows::Devices::Enumeration::DeviceInformation::FindAllAsync(serialDevices_aqs);
+}
+
+
+void SerialCommsViewModel::Connect()
+{
+	Device^ selectedDevice = static_cast<Device^>(_availableDevices->GetAt(0));
+	Windows::Devices::Enumeration::DeviceInformation ^entry = selectedDevice->DeviceInfo;
+
+	concurrency::create_task(ConnectToSerialDeviceAsync(entry, cancellationTokenSource->get_token()));
 }
 
 /// <summary>
@@ -122,23 +92,42 @@ Concurrency::task<void> SerialCommsViewModel::ConnectToSerialDeviceAsync(Windows
 			_dataWriterObject = ref new Windows::Storage::Streams::DataWriter(_serialPort->OutputStream);
 
 			// Setting this text will trigger the event handler that runs asynchronously for reading data from the input stream
-
-			Listen();
+			
+			//Listen();
 		}
 		catch (Platform::Exception ^ex)
 		{
 			// perform any cleanup needed
-			CloseDevice();
+		//	CloseDevice();
 		}
 	});
+}
+
+void SerialCommsViewModel::sendJob(int jobNum)
+{
+	if (_serialPort != nullptr)
+	{
+		try
+		{
+			//Platform::Array<unsigned char>^ bytes = ref new Platform::Array(jobNum);
+			WriteAsync(cancellationTokenSource->get_token(), jobNum);
+		}
+		catch (Platform::Exception ^ex)
+		{
+		}
+	}
+	else
+	{
+		//status->Text = "Select a device and connect";
+	}
 }
 
 /// <summary>
 /// Returns a task that sends the outgoing data from the sendText textbox to the output stream. 
 /// </summary
-Concurrency::task<void> SerialCommsViewModel::WriteAsync(Concurrency::cancellation_token cancellationToken, Platform::String^ messageToSend)
+Concurrency::task<void> SerialCommsViewModel::WriteAsync(Concurrency::cancellation_token cancellationToken, int messageToSend)
 {
-	_dataWriterObject->WriteString(messageToSend);
+	_dataWriterObject->WriteByte(messageToSend);
 
 	return concurrency::create_task(_dataWriterObject->StoreAsync(), cancellationToken).then([this](unsigned int bytesWritten)
 	{
@@ -155,46 +144,9 @@ Concurrency::task<void> SerialCommsViewModel::ReadAsync(Concurrency::cancellatio
 
 	return concurrency::create_task(_dataReaderObject->LoadAsync(_readBufferLength), cancellationToken).then([this](unsigned int bytesRead)
 	{
-		/*
-		Dynamically generate repeating tasks via "recursive" task creation - "recursively" call Listen() at the end of the continuation chain.
-		The "recursive" call is not true recursion. It will not accumulate stack since every recursive is made in a new task.
-		*/
-
 		// start listening again after done with this chunk of incoming data
 		Listen();
 	});
-}
-
-/// <summary>
-/// Returns the sum of the data bits being sent so a checksum value can be sent to the TRacer for error control
-/// </sumary
-int SerialCommsViewModel::CreateChecksum(Platform::String^ message)
-{
-	return 5;
-}
-
-/// <summary>
-/// Initiates task cancellation
-/// </summary
-void SerialCommsViewModel::CancelReadTask(void)
-{
-	cancellationTokenSource->cancel();
-}
-
-/// <summary>
-/// Closes the comport currently connected
-/// </summary
-void SerialCommsViewModel::CloseDevice(void)
-{
-	delete(_dataReaderObject);
-	_dataReaderObject = nullptr;
-
-	delete(_dataWriterObject);
-	_dataWriterObject = nullptr;
-
-	delete(_serialPort);
-	_serialPort = nullptr;
-
 }
 
 /// <summary>
@@ -206,6 +158,8 @@ void SerialCommsViewModel::Listen()
 	{
 		if (_serialPort != nullptr)
 		{
+			cancellationTokenSource = new Concurrency::cancellation_token_source();
+
 			// calling task.wait() is not allowed in Windows Runtime STA (Single Threaded Apartment) threads due to blocking the UI.
 			concurrency::create_task(ReadAsync(cancellationTokenSource->get_token()));
 		}
@@ -214,12 +168,62 @@ void SerialCommsViewModel::Listen()
 	{
 		if (ex->GetType()->FullName == "TaskCanceledException")
 		{
-			CloseDevice();
-		}
-		else
-		{
+			closeDevice();
 		}
 	}
 }
+
+/// <summary>
+/// Closes the comport currently connected
+/// </summary
+void SerialCommsViewModel::closeDevice(void)
+{
+	delete(_dataReaderObject);
+	_dataReaderObject = nullptr;
+
+	delete(_dataWriterObject);
+	_dataWriterObject = nullptr;
+
+	delete(_serialPort);
+	_serialPort = nullptr;
+}
+
+
+
+/// <summary>
+/// Returns the sum of the data bits being sent so a checksum value can be sent to the TRacer for error control
+/// </sumary
+int SerialCommsViewModel::CreateChecksum(Platform::String^ message)
+{
+	return 5;
+}
+
+Windows::Foundation::Collections::IVector<Platform::Object^>^ SerialCommsViewModel::getAvailableDevices()
+{
+	return _availableDevices;
+}
+
+/// <Summary>
+/// Determines if the device Id corresponds to the Tracer or another type of serial device since more
+/// devices may be connected to the Pi in the future for the company as they add features to their overall
+/// system of making lesnes
+bool SerialCommsViewModel::IsTracer(Platform::String^ id)
+{
+	if (id == "\\")
+		return true;
+	else
+		return false;
+}
+
+/// <summary>
+/// Initiates task cancellation
+/// </summary
+void SerialCommsViewModel::CancelReadTask(void)
+{
+	cancellationTokenSource->cancel();
+}
+
+
+
 
 

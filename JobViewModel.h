@@ -9,11 +9,18 @@ namespace VEELB
 	public:
 		void Run(Windows::ApplicationModel::Background::IBackgroundTaskInstance^ taskInstance);
 		void Start(Windows::ApplicationModel::Background::IBackgroundTaskInstance^ taskInstance);
-		JobViewModel(Platform::String^ jobNumber, SerialCommsViewModel^ serialViewModel);
-		JobViewModel();
+		JobViewModel(int jobNumber, SerialCommsViewModel^ serialViewModel);
+		JobViewModel(); 
+		int getJobNumber();
+		int getXPosition();
+		int getYPosition();
+		void setDataReceived(Platform::String^ inData);
+
 	private:
-		Platform::String^ jobNumber;
+		int jobNumber;
 		double xPosition;
 		double yPosition;
+		Platform::String^ dataReceived;
 	};
 }
+

@@ -1,43 +1,36 @@
 #pragma once
 
-using namespace Platform;
 using namespace std;
 
 namespace VEELB
 {
 	public ref class SerialCommsViewModel sealed
 	{
-	private:
-		Platform::Collections::Vector<Platform::Object^>^ _availableDevices;
-		Windows::Devices::SerialCommunication::SerialDevice ^_serialPort;
-		Windows::Storage::Streams::DataWriter^ _dataWriterObject;
-		Windows::Storage::Streams::DataReader^ _dataReaderObject;
-		Concurrency::cancellation_token_source* cancellationTokenSource;
-
+	 private:     
+	 	Windows::Foundation::Collections::IVector<Platform::Object^>^ _availableDevices;
+        Windows::Devices::SerialCommunication::SerialDevice ^_serialPort;
+     	Windows::Storage::Streams::DataWriter^ _dataWriterObject;
+     	Windows::Storage::Streams::DataReader^ _dataReaderObject;
+    	Concurrency::cancellation_token_source* cancellationTokenSource;
+		Concurrency::task<void> ConnectToSerialDeviceAsync(Windows::Devices::Enumeration::DeviceInformation ^device, Concurrency::cancellation_token cancellationToken);
+		Concurrency::task<void> WriteAsync(Concurrency::cancellation_token cancellationToken, int messageToSend);
+		Concurrency::task<void> ReadAsync(Concurrency::cancellation_token cancellationToken);
 		void Listen();
+		void closeDevice();
+
+	 public:
+		static Windows::Foundation::IAsyncOperation<Windows::Devices::Enumeration::DeviceInformationCollection ^> ^ListAvailableSerialDevicesAsync(void);
+		void sendJob(int jobNum);
+		void ListSerialDevices();
+		Windows::Foundation::Collections::IVector<Platform::Object^>^ getAvailableDevices(); 
+		
 		void ListAvailablePorts(void);
 		void CancelReadTask(void);
-		void CloseDevice(void);
 		int CreateChecksum(Platform::String^ message);
 		bool IsTracer(Platform::String^ id);
-		Concurrency::task<void> WriteAsync(Concurrency::cancellation_token cancellationToken, Platform::String^ message);
-		Concurrency::task<void> ReadAsync(Concurrency::cancellation_token cancellationToken);
-		Concurrency::task<void> ConnectToSerialDeviceAsync(Windows::Devices::Enumeration::DeviceInformation ^device, Concurrency::cancellation_token cancellationToken);
 
-	public:
-		static Windows::Foundation::IAsyncOperation<Windows::Devices::Enumeration::DeviceInformationCollection ^> ^ListAvailableSerialDevicesAsync(void);
-		void sendJob(Platform::String^ jobNum);
-		void ConnectToTracer();
-		// For XAML binding purposes, use the IObservableVector interface containing Object^ objects. 
-		// This wraps the real implementation of _availableDevices which is implemented as a Vector.
-		// See "Data Binding Overview (XAML)" https://msdn.microsoft.com/en-us/library/windows/apps/xaml/hh758320.aspx
-		property Windows::Foundation::Collections::IObservableVector<Platform::Object^>^ AvailableDevices
-		{
-			Windows::Foundation::Collections::IObservableVector<Platform::Object^>^ get()
-			{
-				return _availableDevices;
-			}
-		}
+		void Connect();
+		
 	};
 
 }

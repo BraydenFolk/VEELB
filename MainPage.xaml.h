@@ -44,6 +44,8 @@ namespace VEELB
 		int jobNumInt;
 		WriteableBitmap^ ImageSource = ref new WriteableBitmap(4, 5);
 		SerialCommsViewModel^ _serialViewModel;
+		JobViewModel^ _jobViewModel;
+
 	private:
 		// Event handlers
 		void Page_Loaded(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
@@ -61,13 +63,18 @@ namespace VEELB
 		void zeroBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 		void backspaceBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 		void clearBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
-		void enterBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
-
+		void returnBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+		
 		// UI Functions
+		void VEELB::MainPage::screenSaverAnimation();
 		void VEELB::MainPage::UpdateImage(const cv::Mat& image);
 		void VEELB::MainPage::CameraFeed();
 		void ScreenSaverGrid_Tapped(Platform::Object^ sender, Windows::UI::Xaml::Input::TappedRoutedEventArgs^ e);
 		void exitWebcamBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+		void toggleHistoryBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+		void startBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+		void sleepBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+		void settingsWebcamBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 
 		// Platform::String^ conversion
 		string convertPlatformStringToStandardString(Platform::String^ inputString);

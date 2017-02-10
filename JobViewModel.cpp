@@ -16,7 +16,7 @@ void JobViewModel::Run(IBackgroundTaskInstance^ taskInstance)
 
 }
 
-JobViewModel::JobViewModel(Platform::String^ jobNumberIn, SerialCommsViewModel^ serialViewModel)
+JobViewModel::JobViewModel(int jobNumberIn, SerialCommsViewModel^ serialViewModel)
 {
 	jobNumber = jobNumberIn;
 	serialViewModel->sendJob(jobNumber);
@@ -33,4 +33,23 @@ void JobViewModel::Start(IBackgroundTaskInstance^ taskInstance)
 	// background activities are the same, so there is nothing to check.
 	auto activity = ref new JobViewModel();
 	activity->Run(taskInstance);
+}
+
+void JobViewModel::setDataReceived(Platform::String^ inData)
+{
+	dataReceived = inData;
+}
+
+int JobViewModel::getJobNumber()
+{
+	return jobNumber;
+}
+int JobViewModel::getXPosition()
+{
+	return xPosition;
+}
+
+int JobViewModel::getYPosition()
+{
+	return yPosition;
 }
