@@ -91,9 +91,11 @@ Concurrency::task<void> SerialCommsViewModel::ConnectToSerialDeviceAsync(Windows
 			// setup our data writer for handling outgoing data
 			_dataWriterObject = ref new Windows::Storage::Streams::DataWriter(_serialPort->OutputStream);
 
-			// Setting this text will trigger the event handler that runs asynchronously for reading data from the input stream
-			
-			//Listen();
+			connected = true;
+
+			// Setting this text will trigger the event handler that runs asynchronously for reading data from the input stream			
+			Listen();
+
 		}
 		catch (Platform::Exception ^ex)
 		{
@@ -125,15 +127,34 @@ void SerialCommsViewModel::sendJob(int jobNum)
 /// <summary>
 /// Returns a task that sends the outgoing data from the sendText textbox to the output stream. 
 /// </summary
-Concurrency::task<void> SerialCommsViewModel::WriteAsync(Concurrency::cancellation_token cancellationToken, int messageToSend)
-{
-	_dataWriterObject->WriteByte(messageToSend);
+Concurrency::task<void> SerialCommsViewModel::WriteAsync(Concurrency::cancellation_token cancellationToken, int jobNum)
+{	
+	_dataWriterObject->WriteByte(0x88);
+	vector<int> digits = SeparateIntoDigits(jobNum);
+
+	for (int i = 0; i < 6; i++)
+	{
+		_dataWriterObject->WriteByte(digits.at(i));
+	}
+
+	_dataWriterObject->WriteByte(CreateChecksum(digits));
 
 	return concurrency::create_task(_dataWriterObject->StoreAsync(), cancellationToken).then([this](unsigned int bytesWritten)
 	{
 	});
 }
 
+vector<int> SerialCommsViewModel::SeparateIntoDigits(unsigned int value)
+{
+	vector<int> digits;
+	do
+	{
+		digits.push_back(value % 10);
+	} while (value /= 10);
+
+	reverse(digits.begin(), digits.end());
+	return digits;
+}
 
 /// <summary>
 /// Returns a task that reads in the data from the input stream
@@ -186,16 +207,22 @@ void SerialCommsViewModel::closeDevice(void)
 
 	delete(_serialPort);
 	_serialPort = nullptr;
-}
 
+	connected = false;
+}
 
 
 /// <summary>
 /// Returns the sum of the data bits being sent so a checksum value can be sent to the TRacer for error control
 /// </sumary
-int SerialCommsViewModel::CreateChecksum(Platform::String^ message)
+int SerialCommsViewModel::CreateChecksum(vector<int> digits)
 {
-	return 5;
+	int sum = 0;
+	for (int i = 0; i < 6; i++)
+	{
+		sum += digits.at(i);
+	}
+	return sum;
 }
 
 Windows::Foundation::Collections::IVector<Platform::Object^>^ SerialCommsViewModel::getAvailableDevices()
@@ -223,7 +250,10 @@ void SerialCommsViewModel::CancelReadTask(void)
 	cancellationTokenSource->cancel();
 }
 
-
+bool SerialCommsViewModel::IsConnected()
+{
+	return connected;
+}
 
 
 

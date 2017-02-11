@@ -15,8 +15,11 @@ namespace VEELB
 		Concurrency::task<void> ConnectToSerialDeviceAsync(Windows::Devices::Enumeration::DeviceInformation ^device, Concurrency::cancellation_token cancellationToken);
 		Concurrency::task<void> WriteAsync(Concurrency::cancellation_token cancellationToken, int messageToSend);
 		Concurrency::task<void> ReadAsync(Concurrency::cancellation_token cancellationToken);
+		bool connected;
 		void Listen();
 		void closeDevice();
+		vector<int> SeparateIntoDigits(unsigned int value);
+		int CreateChecksum(vector<int> digits);
 
 	 public:
 		static Windows::Foundation::IAsyncOperation<Windows::Devices::Enumeration::DeviceInformationCollection ^> ^ListAvailableSerialDevicesAsync(void);
@@ -26,11 +29,10 @@ namespace VEELB
 		
 		void ListAvailablePorts(void);
 		void CancelReadTask(void);
-		int CreateChecksum(Platform::String^ message);
 		bool IsTracer(Platform::String^ id);
 
 		void Connect();
-		
+		bool IsConnected();
 	};
 
 }

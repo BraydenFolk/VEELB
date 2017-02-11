@@ -275,7 +275,8 @@ void VEELB::MainPage::enterJobNumberBtn_Click(Platform::Object^ sender, Windows:
 	MainGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
 	JobNumberGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;
 
-	_serialViewModel->Connect();
+	if (!_serialViewModel->IsConnected())
+		_serialViewModel->Connect();
 }
 
 
@@ -412,6 +413,7 @@ void VEELB::MainPage::returnBtn_Click(Platform::Object^ sender, Windows::UI::Xam
 
 	JobNumberGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
 	MainGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;
+	jobIdNumTxtBlock->Text = ""; //so when you go back into this screen to enter a new job, the old one isn't still there
 
 	jobNumInt = _wtoi(jobNumString->Data());
 	job = ref new JobViewModel(jobNumInt, _serialViewModel);
