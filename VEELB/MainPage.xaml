@@ -5,10 +5,10 @@
     xmlns:local="using:VEELB"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    mc:Ignorable="d" Loaded="Page_Loaded">
+    mc:Ignorable="d" Loaded="Page_Loaded" Width="762.516">
 
-    <Grid Background="Black">
-        <Grid x:Name="SplashScreenGrid" Visibility="Collapsed" Background="#FF212121">
+    <Grid Background="Black" Margin="0,0,0,0">
+        <Grid x:Name="SplashScreenGrid" Visibility="Visible" Background="#FF212121">
             <Grid.RowDefinitions>
                 <RowDefinition Height="75"/>
                 <RowDefinition Height="100"/>
@@ -41,7 +41,7 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="20"/>
+                <ColumnDefinition Width="10"/>
                 <ColumnDefinition Width="175"/>
                 <ColumnDefinition Width="20"/>
                 <ColumnDefinition Width="*"/>
@@ -51,7 +51,7 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="75"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock Grid.Row="0" Text="Innovative Optical Systems (IOS)" Foreground="White" FontSize="20" Margin="15,10,0,0"/>
+                <TextBlock Grid.Row="0" Text="Innovative Optical Solutions (IOS)" Foreground="White" FontSize="20" Margin="15,10,0,0"/>
                 <Button x:Name="sleepBtn" Background="#FF2C5B9B" Canvas.ZIndex="-1" FontSize="20" Foreground="White"  HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Grid.Column="1" Click="sleepBtn_Click">
                     <Image Source="close.png" />
                 </Button>
@@ -77,13 +77,8 @@
                     </ListBoxItem>
                 </ListBox>
             </Grid>
-            <!--<Image x:Name="imgCV" Canvas.ZIndex="2" Grid.Row="0" Visibility="Visible" Grid.ColumnSpan="5" Grid.RowSpan="4"/>-->
-            <!--<StackPanel  Margin="0,348,0,0">
-                <Button x:Name="initBtn" Content="Initialize" HorizontalAlignment="Left" VerticalAlignment="Top" Width="100" Click="initBtn_Click" Canvas.ZIndex="-2" Background="#FFCB7979"/>
-                <Button x:Name="detect" Content="detect" HorizontalAlignment="Left" VerticalAlignment="Top" Width="100" Canvas.ZIndex="-2" Background="#FFCB7979" Click="detect_Click"/>
-            </StackPanel>-->
         </Grid>
-        <Grid x:Name="JobNumberGrid" Visibility="Visible" Background="#FF212121">
+        <Grid x:Name="JobNumberGrid" Visibility="Collapsed" Background="#FF212121">
             <Grid.RowDefinitions>
                 <RowDefinition Height="50"/>
                 <RowDefinition Height="2"/>
@@ -96,7 +91,10 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="75"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock Grid.Row="0" Text="Innovative Optical Systems (IOS)" Foreground="White" FontSize="20" Margin="15,10,10,0"/>
+                <TextBlock Grid.Row="0" Text="Innovative Optical Solutions (IOS)" Foreground="White" FontSize="20" Margin="15,10,10,0"/>
+                <Button x:Name="exitJobNumberBtn" Background="#FF2C5B9B" Canvas.ZIndex="-1" FontSize="20" Foreground="White"  HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Grid.Column="1" Click="exitJobNumberBtn_Click">
+                    <Image Source="close.png" />
+                </Button>
             </Grid>
             <Grid Grid.Row="2" Background="#FF3F3F3F">
                 <TextBlock x:Name="jobIdNumTxtBlock"  Text="" Foreground="White" FontSize="72" TextAlignment="Center"/>
@@ -126,15 +124,15 @@
                 <Button x:Name="fourBtn" Margin="0,0.4,1.8,0.2" Grid.ColumnSpan="2" Grid.Row="2" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Foreground="#FFFEFEFE" Content="4" FontSize="36" Click="fourBtn_Click" Background="#FF2C5B9B" />
                 <Button x:Name="fiveBtn" Margin="0.2,0.4,1.6,0.2" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Grid.ColumnSpan="2" Grid.Column="2" Grid.Row="2" Foreground="#FFFEFEFE" Content="5" FontSize="36" Click="fiveBtn_Click" Background="#FF2C5B9B"/>
                 <Button x:Name="sixBtn" Margin="0.4,0.4,0,0.2" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Grid.Column="4" Grid.Row="2" Foreground="#FFFEFEFE" Content="6" FontSize="36" Click="sixBtn_Click"  Background="#FF2C5B9B"  />
-                <Button x:Name="sevenBtn" Margin="0,1.4,1.8,1.8" Grid.ColumnSpan="2" Grid.Row="3" Grid.RowSpan="3" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Foreground="#FFFEFEFE" Content="7" FontSize="36" Click="sevenBtn_Click"  Background="#FF2C5B9B" />
-                <Button x:Name="eightBtn" Margin="0.2,1.4,1.6,1.8" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Grid.ColumnSpan="2" Grid.Column="2" Grid.Row="3" Grid.RowSpan="3" Foreground="#FFFEFEFE" Content="8" FontSize="36" Click="eightBtn_Click"  Background="#FF2C5B9B"/>
-                <Button x:Name="nineBtn" Margin="0.4,1.4,0,1.8" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Grid.Column="4" Grid.Row="3" Grid.RowSpan="3" Foreground="#FFFEFEFE" Content="9" FontSize="36" Click="nineBtn_Click"  Background="#FF2C5B9B" />
-                <Button x:Name="zeroBtn" Margin="0.2,0.4,1.6,0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Grid.ColumnSpan="2" Grid.Column="2" Grid.Row="6" Foreground="#FFFEFEFE" Content="0" FontSize="36" Click="zeroBtn_Click" Background="#FF2C5B9B"  />
+                <Button x:Name="sevenBtn" Margin="0,1.8,1.8,1.8" Grid.ColumnSpan="2" Grid.Row="3" Grid.RowSpan="3" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Foreground="#FFFEFEFE" Content="7" FontSize="36" Click="sevenBtn_Click"  Background="#FF2C5B9B" />
+                <Button x:Name="eightBtn" Margin="0.2,1.8,1.6,1.8" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Grid.ColumnSpan="2" Grid.Column="2" Grid.Row="3" Grid.RowSpan="3" Foreground="#FFFEFEFE" Content="8" FontSize="36" Click="eightBtn_Click"  Background="#FF2C5B9B"/>
+                <Button x:Name="nineBtn" Margin="0.4,1.8,0,1.8" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Grid.Column="4" Grid.Row="3" Grid.RowSpan="3" Foreground="#FFFEFEFE" Content="9" FontSize="36" Click="nineBtn_Click"  Background="#FF2C5B9B" />
+                <Button x:Name="zeroBtn" Margin="0.2,0.2,1.6,0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Grid.ColumnSpan="2" Grid.Column="2" Grid.Row="6" Foreground="#FFFEFEFE" Content="0" FontSize="36" Click="zeroBtn_Click" Background="#FF2C5B9B"  />
                 <Button x:Name="backspaceBtn" Margin="0,1,0,1.6" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Grid.Column="6" Grid.RowSpan="2"  Foreground="#FFFEFEFE" FontSize="36" Click="backspaceBtn_Click"  Background="#FF2C5B9B" >
                     <Image Source="back.png"  />
                 </Button>
                 <Button x:Name="clearBtn" Margin="0,0.4,0,0.2" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Grid.Column="6" Grid.Row="2" Foreground="#FFFEFEFE" Content="C" FontSize="40" Click="clearBtn_Click" Background="#FFA2322E" FontWeight="Bold" />
-                <Button x:Name="returnBtn" Margin="0,-0.8,0,0.2" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Grid.Column="6" Grid.Row="4" Foreground="White" FontSize="36"  Background="#FF45CD59" Click="returnBtn_Click" >
+                <Button x:Name="returnBtn" Margin="0,0.2" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Grid.Column="6" Grid.Row="4" Foreground="White" FontSize="36"  Background="#FF45CD59" Click="returnBtn_Click" >
                     <Image x:Name="returnImage" Source="return.png" />
                 </Button>
             </Grid>
@@ -143,32 +141,39 @@
         <Grid x:Name="WebcamFeedGrid" Visibility="Collapsed" Background="#FF212121">
             <!--<Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="75"/>
+            DisplayMode="Inline"
             </Grid.ColumnDefinitions>-->
-            <SplitView x:Name="WebcamSplitter" IsPaneOpen="False" DisplayMode="Inline" Background="#19FFFFFF" Grid.Column="0">
+            <SplitView x:Name="WebcamSplitter" IsPaneOpen="False" DisplayMode="Overlay" Background="#19FFFFFF" Grid.Column="0">
                 <SplitView.Pane >
-                    <Grid >
-                        <TextBlock />
-                        <Slider Margin="10,82,10,309"/>
+                    <Grid Background="#FF212121">
+                        <TextBlock Text="Outline Colour" Margin="10,84,10,323" FontSize="20"/>
+                        <TextBlock Text="Red" Margin="10,114,252,293" FontSize="20"/>
+                        <Slider x:Name="redSlider" Margin="73,107,10,284" ValueChanged="redSlider_ValueChanged" Maximum="255"/>
+                        <TextBlock Text="Green" Margin="10,146,252,261" FontSize="20"/>
+                        <Slider x:Name="greenSlider" Margin="73,139,10,252" ValueChanged="greenSlider_ValueChanged" Maximum="255"/>
+                        <TextBlock Text="Blue" Margin="10,176,252,231" FontSize="20"/>
+                        <Slider x:Name="blueSlider" Margin="73,173,10,218" ValueChanged="blueSlider_ValueChanged" Maximum="255"/>
+                        <TextBlock Text="Outline Thickness" Margin="10,219,10,188" FontSize="20"/>
+                        <Slider Margin="10,242,10,149"/>
                     </Grid>
                 </SplitView.Pane>
+                <Image x:Name="imgCV" Canvas.ZIndex="2" Visibility="Visible" Source="glasses.png" />
             </SplitView>
-            <!--ADDED RELATIVE PANEL-->
             <Grid>
-                <Image x:Name="imgCV" Canvas.ZIndex="2" Visibility="Visible" />
-                <Button x:Name="exitWebcamBtn" Margin="697,10,10,0" Background="#19FFFFFF" Canvas.ZIndex="-1" FontSize="20" Foreground="White" Click="exitWebcamBtn_Click" HorizontalAlignment="Stretch" VerticalAlignment="Top" Height="46">
+                <Button x:Name="exitWebcamBtn" Margin="0,10,10,0" Background="#3FFFFFFF" Canvas.ZIndex="-1" FontSize="20" Foreground="White" Click="exitWebcamBtn_Click" HorizontalAlignment="Right" VerticalAlignment="Top" Height="46" Width="54">
                     <Image Source="close.png" />
                 </Button>
-                <Button x:Name="settingsWebcamBtn" Margin="10,10,696,0" Background="#19FFFFFF" Canvas.ZIndex="-1" FontSize="20" Foreground="White" HorizontalAlignment="Stretch" VerticalAlignment="Top" Click="settingsWebcamBtn_Click" Height="46">
+                <Button x:Name="settingsWebcamBtn" Margin="10,10,0,0" Background="#3FFFFFFF" Canvas.ZIndex="-1" FontSize="20" Foreground="White" HorizontalAlignment="Left" VerticalAlignment="Top" Click="settingsWebcamBtn_Click" Height="46" Width="55">
                     <Image Source="settings.png" />
                 </Button>
             </Grid>
-            <!--<TextBlock x:Name="exceptionHolder" Text="ex" Foreground="#FFF91010" Margin="0,389,0,-41" />-->
-            <!--<Slider x:Name="threshSilder" HorizontalAlignment="Left" Width="768" Margin="0,387,0,-42"/>-->
         </Grid>
         <Grid x:Name="ScreenSaverGrid" Background="#19FFFFFF" Visibility="Collapsed" Tapped="ScreenSaverGrid_Tapped">
             <Image x:Name="screenSaverImg" Visibility="Collapsed" Margin="0,0,540,279" Source="glasses.png"/>
+        </Grid>
+        <Grid x:Name="ProgressGrid" Visibility="Collapsed" >
+            <TextBlock x:Name="Status" Margin="398,0,166,10" Text="Initializing..." FontSize="18" TextAlignment="Right" Height="29" VerticalAlignment="Bottom"/>
+            <ProgressBar x:Name="progBar" Margin="600,0,10,10" Height="29" Background="#FF585858" VerticalAlignment="Bottom" />
         </Grid>
     </Grid>
 </Page>

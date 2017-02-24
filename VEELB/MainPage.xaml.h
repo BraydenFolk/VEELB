@@ -7,7 +7,6 @@
 
 #include "MainPage.g.h"
 #include "JobViewModel.h"
-#include "SerialCommsViewModel.h"
 #include <opencv2\core\core.hpp>
 using namespace VEELB;
 using namespace Platform;
@@ -38,14 +37,26 @@ namespace VEELB
 	{
 	public:
 		MainPage();
+		// Serial comms
+		static Windows::Foundation::IAsyncOperation<Windows::Devices::Enumeration::DeviceInformationCollection ^> ^ListAvailableSerialDevicesAsync(void);
+		void sendJob(Platform::String^ jobNum);
+		void ConnectToTracer();
+		// For XAML binding purposes, use the IObservableVector interface containing Object^ objects. 
+		// This wraps the real implementation of _availableDevices which is implemented as a Vector.
+		// See "Data Binding Overview (XAML)" https://msdn.microsoft.com/en-us/library/windows/apps/xaml/hh758320.aspx
+		property Windows::Foundation::Collections::IObservableVector<Platform::Object^>^ AvailableDevices
+		{
+			Windows::Foundation::Collections::IObservableVector<Platform::Object^>^ get()
+			{
+				return _availableDevices;
+			}
+		}
 	private: // Properties
 		cv::Mat _stored_image;
 		Platform::String^ jobNumString;
 		int jobNumInt;
 		WriteableBitmap^ ImageSource = ref new WriteableBitmap(4, 5);
-		SerialCommsViewModel^ _serialViewModel;
-		Windows::Devices::SerialCommunication::SerialDevice ^_serialPort;
-	private:
+	private: 
 		// Event handlers
 		void Page_Loaded(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 		void initBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
@@ -62,25 +73,64 @@ namespace VEELB
 		void zeroBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 		void backspaceBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 		void clearBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
-		void returnBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
-		
-		// UI Functions
 		void VEELB::MainPage::screenSaverAnimation();
+		// UI Functions
 		void VEELB::MainPage::UpdateImage(const cv::Mat& image);
 		void VEELB::MainPage::CameraFeed();
+		void returnBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 		void ScreenSaverGrid_Tapped(Platform::Object^ sender, Windows::UI::Xaml::Input::TappedRoutedEventArgs^ e);
 		void exitWebcamBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 		void toggleHistoryBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 		void startBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+		void exitJobNumberBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 		void sleepBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 		void settingsWebcamBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+		string VEELB::MainPage::convertPlatformStringToStandardString(Platform::String^ inputString);
+		Platform::String^ VEELB::MainPage::convertStringToPlatformString(string inputString);
+		// Serial comms
+		Platform::Collections::Vector<Platform::Object^>^ _availableDevices;
+		Windows::Devices::SerialCommunication::SerialDevice ^_serialPort;
+		Windows::Storage::Streams::DataWriter^ _dataWriterObject;
+		Windows::Storage::Streams::DataReader^ _dataReaderObject;
+		Concurrency::cancellation_token_source* cancellationTokenSource;
 
-		Concurrency::task<void> ConnectToSerialDeviceAsync(Windows::Devices::Enumeration::DeviceInformation ^device, Concurrency::cancellation_token cancellationToken);
-
+		void ListAvailablePorts(void);
+		bool IsTracer(Platform::String^ id);
+		int CreateChecksum(Platform::String^ message);
+		void CancelReadTask(void);
 		void CloseDevice(void);
+		void Listen();
 
-		// Platform::String^ conversion
-		string convertPlatformStringToStandardString(Platform::String^ inputString);
-		Platform::String^ convertStringToPlatformString(string inputString);
+		/*Concurrency::task<void> WriteAsync(Concurrency::cancellation_token cancellationToken, Platform::String^ message);*/
+		Concurrency::task<void> MainPage::WriteAsync(Concurrency::cancellation_token cancellationToken);
+		Concurrency::task<void> ReadAsync(Concurrency::cancellation_token cancellationToken);
+		Concurrency::task<void> ConnectToSerialDeviceAsync(Windows::Devices::Enumeration::DeviceInformation ^device, Concurrency::cancellation_token cancellationToken);
+		void redSlider_ValueChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::Primitives::RangeBaseValueChangedEventArgs^ e);
+		void greenSlider_ValueChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::Primitives::RangeBaseValueChangedEventArgs^ e);
+		void blueSlider_ValueChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::Primitives::RangeBaseValueChangedEventArgs^ e);
+	};
+	public ref class Device sealed
+	{
+	public:
+		Device(Platform::String^ id, Windows::Devices::Enumeration::DeviceInformation^ deviceInfo);
+
+		property Platform::String^ Id
+		{
+			Platform::String^ get()
+			{
+				return _id;
+			}
+		}
+		property Windows::Devices::Enumeration::DeviceInformation^ DeviceInfo
+		{
+			Windows::Devices::Enumeration::DeviceInformation^ get()
+			{
+				return _deviceInformation;
+			}
+		}
+
+	private:
+		Platform::String^ _id;
+		Windows::Devices::Enumeration::DeviceInformation^ _deviceInformation;
 	};
 }

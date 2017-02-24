@@ -22,6 +22,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <codecvt>
+#include "FileAccess.h";
 //#include <sqlite3.h>
 //#include <winsqlite/winsqlite3.h>
 
@@ -66,23 +67,30 @@ int detectType = 0;
 VideoCapture cam;
 int xPos = 235;
 int yPos = 235;
+int redSldr = 0;
+int greenSldr = 0;
+int blueSldr = 0;
 JobViewModel^ job;
+FileAccess^ consoleFile;
+FileAccess^ configFile;
+//SerialCommsViewModel^ serial;
+//SerialCommsViewModel^ job;
 bool onExit = false;
 auto itemCollection = ref new Platform::Collections::Vector<Object^>();
 
 MainPage::MainPage()
 {
 	InitializeComponent();
-
 	/*Windows::ApplicationModel::Email::EmailMessage^ temp = ref new Windows::ApplicationModel::Email::EmailMessage();
-
+	
 	StorageFile^ attachmentFile;
 	Windows::Storage::Streams::RandomAccessStreamReference^ stream = Windows::Storage::Streams::RandomAccessStreamReference::CreateFromFile(attachmentFile);*/
+	_availableDevices = ref new Platform::Collections::Vector<Platform::Object^>();
+	ListAvailablePorts();
 
-	_serialViewModel = ref new SerialCommsViewModel;
-	_serialViewModel->ConnectToTracer();
+	consoleFile = ref new FileAccess("console.txt");
+	configFile = ref new FileAccess(L"config.dat");
 }
-
 
 // Webcam functions
 void cvVideoTask()
@@ -104,9 +112,10 @@ void cvVideoTask()
 
 		if (frame.rows > 0 && frame.cols > 0)
 		{
-
+			
 			Compare(frame, oldFrame, grayScale);
 			tmp.copyTo(oldFrame);
+			
 			cv::winrt_imshow();
 		}
 
@@ -114,7 +123,7 @@ void cvVideoTask()
 		{
 			break;
 		}
-
+		
 	}
 
 	cam.release();
@@ -123,6 +132,7 @@ void cvVideoTask()
 int seuil = 10;
 void Compare(Mat frame, Mat oldFrame, Mat grayScale)
 {
+	Mat canny, gray;
 	int colourVal = 0;
 	int topX = 0;
 	int topY = 0;
@@ -130,35 +140,86 @@ void Compare(Mat frame, Mat oldFrame, Mat grayScale)
 	int bottomY = 0;
 	int first = 0;
 	int changed = 0;
+	int thresh = 100;
 
-	cv::line(frame, cv::Point(xPos, yPos - 10), cv::Point(xPos, yPos + 10), Scalar(0, 204, 0), 3);
-	cv::line(frame, cv::Point(xPos - 10, yPos), cv::Point(xPos + 10, yPos), Scalar(0, 204, 0), 3);
-	cv::circle(frame, cv::Point(xPos, yPos), radius, Scalar(0, 204, 0), 10, 8, 0);
+	double blue = (double)blueSldr;
+	double green = (double)greenSldr;
+	double red = (double)redSldr;
 
-	for (int i = 0; i < frame.rows; i++)
+	cv::line(frame, cv::Point(xPos, yPos - 10), cv::Point(xPos, yPos + 10), Scalar(red, green, blue), 3);
+	cv::line(frame, cv::Point(xPos - 10, yPos), cv::Point(xPos + 10, yPos), Scalar(red, green, blue), 3);
+	cv::circle(frame, cv::Point(xPos, yPos), radius, Scalar(red, green, blue), 10, 8, 0);
+	//cv::circle(frame, cv::Point(xPos, yPos), radius, Scalar(0, 204, 0), 10, 8, 0);
+
+	cvtColor(frame, gray, CV_BGR2GRAY); // convert to grayscale
+	//blur(gray, gray, cv::Size(3, 3)); // blur converted mat
+
+	Canny(gray, canny, thresh, thresh * 2, 3); // apply canny filter to image
+	try
 	{
-		for (int j = 0; j < frame.cols; j++)
+		for (int i = 0; i < frame.rows; i++)
 		{
-			Vec3b colour = frame.at<Vec3b>(i, j);
-
-			if (colour.val[0] < 90 && colour.val[1] < 90 && colour.val[2] < 90)
+			for (int j = 0; j < frame.cols; j++)
 			{
-				frame.at<Vec3b>(i, j)[0] = 255;
-				frame.at<Vec3b>(i, j)[1] = 0;
-				frame.at<Vec3b>(i, j)[2] = 0;
-
-				if (first == 0)
+				Vec3b colour = frame.at<Vec3b>(i, j);
+				//Scalar colour = gray.at<uchar>(cv::Point(i, j));
+				/*if (colour.val[0] == 255 && colour.val[1] == 255 && colour.val[2] == 255)
 				{
-					topX = i;
-					topY = j;
-					first = 1;
-				}
+					frame.at<Vec3b>(i, j)[0] = 255;
+					frame.at<Vec3b>(i, j)[1] = 0;
+					frame.at<Vec3b>(i, j)[2] = 0;
 
-				bottomX = i;
-				bottomY = j;
+					if (first == 0)
+					{
+						topX = i;
+						topY = j;
+						first = 1;
+					}
+
+					bottomX = i;
+					bottomY = j;
+				}*/
+				/*if (colour.val[0] == 255)
+				{
+					frame.at<Vec3b>(i, j)[0] = 255;
+					frame.at<Vec3b>(i, j)[1] = 0;
+					frame.at<Vec3b>(i, j)[2] = 0;
+
+					if (first == 0)
+					{
+						topX = i;
+						topY = j;
+						first = 1;
+					}
+
+					bottomX = i;
+					bottomY = j;
+				}*/
+
+				if (colour.val[0] < 100 && colour.val[1] < 100 && colour.val[2] < 100)
+				{
+					frame.at<Vec3b>(i, j)[0] = 255;
+					frame.at<Vec3b>(i, j)[1] = 0;
+					frame.at<Vec3b>(i, j)[2] = 0;
+
+					if (first == 0)
+					{
+						topX = i;
+						topY = j;
+						first = 1;
+					}
+
+					bottomX = i;
+					bottomY = j;
+				}
 			}
 		}
 	}
+	catch (Platform::Exception^ e)
+	{
+		Platform::String^ temp = e->Message;
+	}
+
 
 	int tempx = topX + (bottomX - topX) / 2;
 	int tempy = (topY + bottomY) / 2;
@@ -188,9 +249,9 @@ void VEELB::MainPage::UpdateImage(const cv::Mat& image)
 
 		// Set the bitmap to the Image element
 		imgCV->Source = bitmap;
-
+		
 	}
-	else
+	else 
 	{
 		printf("Error loading image into buffer\n");
 	}
@@ -247,6 +308,18 @@ void VEELB::MainPage::CameraFeed()
 	}
 }
 
+void VEELB::MainPage::exitWebcamBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
+{
+	onExit = true;
+
+	WebcamFeedGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
+	MainGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;
+
+	Platform::String^ txt = redSldr.ToString() + " " + greenSldr.ToString() + " " + blueSldr.ToString();
+	if (configFile->WriteTextToFile(txt))
+	{
+	}
+}
 
 // Event handlers
 // TODO: Remove
@@ -257,86 +330,29 @@ void VEELB::MainPage::Page_Loaded(Object^ sender, RoutedEventArgs^ e)
 
 void VEELB::MainPage::initBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
+	/*Status->Text = "Loading config...";
+	progBar->Value = 50;
+	Platform::String^ temp;
+	try
+	{
+		Platform::String^ config = configFile->ReadTextFromFile();
+	}
+	catch (Platform::Exception^ e)
+	{
+		temp = e->Message;
+	}
+
+	progBar->Value = 100;*/
+
 	MainGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
 	WebcamFeedGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;
 
-	winrt_setFrameContainer(imgCV);
+	winrt_setFrameContainer(imgCV); 
 	winrt_startMessageLoop(cvVideoTask);
 
 	onExit = false;
 	//CameraFeed();
 }
-
-// TODO: finish
-void VEELB::MainPage::enterJobNumberBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
-{
-	MainGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
-	JobNumberGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;
-
-//	_serialViewModel->sendJob(jobIdNumTxtBlock->Text);
-
-	/*Windows::Foundation::Collections::IVector<Platform::Object^>^ availableDevices = _serialViewModel->getAvailableDevices();
-	Platform::Object^ temp = availableDevices->GetAt(0);
-
-	Device^ selectedDevice = static_cast<Device^>(availableDevices->GetAt(0));
-	Windows::Devices::Enumeration::DeviceInformation ^entry = selectedDevice->DeviceInfo;
-	Concurrency::cancellation_token_source* cancellationTokenSource = new Concurrency::cancellation_token_source();
-	
-
-	concurrency::create_task(ConnectToSerialDeviceAsync(entry, cancellationTokenSource->get_token()));
-	*/		
-}
-
-/// <summary>
-/// Creates a task chain that attempts connect to a serial device asynchronously. 
-/// </summary
-Concurrency::task<void> MainPage::ConnectToSerialDeviceAsync(Windows::Devices::Enumeration::DeviceInformation ^device, Concurrency::cancellation_token cancellationToken)
-{
-	return Concurrency::create_task(Windows::Devices::SerialCommunication::SerialDevice::FromIdAsync(device->Id), cancellationToken)
-		.then([this](Windows::Devices::SerialCommunication::SerialDevice ^serial_device)
-	{
-		try
-		{
-			_serialPort = serial_device;
-
-			Windows::Foundation::TimeSpan _timeOut;
-			_timeOut.Duration = 10000000L;
-
-			// Configure serial settings
-			_serialPort->WriteTimeout = _timeOut;
-			_serialPort->ReadTimeout = _timeOut;
-			_serialPort->BaudRate = 19200;
-			_serialPort->Parity = Windows::Devices::SerialCommunication::SerialParity::None;
-			_serialPort->StopBits = Windows::Devices::SerialCommunication::SerialStopBitCount::One;
-			_serialPort->DataBits = 8;
-			_serialPort->Handshake = Windows::Devices::SerialCommunication::SerialHandshake::None;
-
-			// setup our data reader for handling incoming data
-			
-		}
-		catch (Platform::Exception ^ex)
-		{
-			// perform any cleanup needed
-			CloseDevice();
-		}
-	});
-}
-
-/// <summary>
-/// Closes the comport currently connected
-/// </summary
-void MainPage::CloseDevice(void)
-{
-	/*delete(_dataReaderObject);
-	_dataReaderObject = nullptr;
-
-	delete(_dataWriterObject);
-	_dataWriterObject = nullptr;
-*/
-	delete(_serialPort);
-	_serialPort = nullptr;
-}
-
 
 void VEELB::MainPage::screenSaverAnimation()
 {//rows 768, cols 432
@@ -349,14 +365,20 @@ void VEELB::MainPage::screenSaverAnimation()
 			for (int j = 0; j < 430; j = j + 2)
 			{
 				//(left, top, right, bottom);
-
-				screenSaverImg->Margin = Thickness((double)j, (double)i, (double)(432 - j), (double)(768 - 0));
+				
+				screenSaverImg->Margin = Thickness((double)j, (double)i, (double)(432-j), (double)(768-0));
 				Sleep(1000);
 			}
 		}
 	}
 }
 
+// TODO: finish
+void VEELB::MainPage::enterJobNumberBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
+{
+	MainGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
+	JobNumberGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;
+}
 
 void VEELB::MainPage::oneBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
@@ -426,13 +448,14 @@ void VEELB::MainPage::zeroBtn_Click(Platform::Object^ sender, Windows::UI::Xaml:
 	jobNumString = jobIdNumTxtBlock->Text;
 }
 
+
 void VEELB::MainPage::backspaceBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
 	Platform::String^ number = jobIdNumTxtBlock->Text;
+
 	if (number->Length() > 0)
 	{
 		string jobIdStdString = convertPlatformStringToStandardString(number);
-		//jobIdStdString = jobIdStdString.substr(0, jobIdStdString.length - 1);
 		jobIdNumTxtBlock->Text = convertStringToPlatformString(jobIdStdString);
 		jobNumString = jobIdNumTxtBlock->Text;
 	}
@@ -443,6 +466,7 @@ string VEELB::MainPage::convertPlatformStringToStandardString(Platform::String^ 
 	wstring tempw(inputString->Begin());
 	string jobIdStdString(tempw.begin(), tempw.end() - 1);
 	return jobIdStdString;
+
 }
 
 Platform::String^ VEELB::MainPage::convertStringToPlatformString(string inputString)
@@ -453,39 +477,74 @@ Platform::String^ VEELB::MainPage::convertStringToPlatformString(string inputStr
 	return retval;
 }
 
+
 void VEELB::MainPage::clearBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
-	if (jobIdNumTxtBlock->Text == "")
-	{
-		JobNumberGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
-		MainGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;
-	}
-	else
-		jobIdNumTxtBlock->Text = "";
+	jobIdNumTxtBlock->Text = "";
 	jobNumString = jobIdNumTxtBlock->Text;
 }
 
-void VEELB::MainPage::returnBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
+
+void MainPage::returnBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
 	// TODO: validate string ?
-	//jobNumInt = _wtoi(jobNumString->Data());
+	jobNumInt = _wtoi(jobNumString->Data());
 
-	//job = ref new JobViewModel(jobNumInt);
+	job = ref new JobViewModel(jobNumInt);
+
+	xPos = job->getXPosition();
+
+	//ConnectToTracer();
 
 	// TODO: save last returned number
 	mainGridJobNumberTxtBlk->Text = "Job number for session: " + jobNumString;
-
+	
 	JobNumberGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
-	MainGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;
+	MainGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;	
 
-	/*TextBlock^ txtBlock = ref new TextBlock();
-	ListBoxItem^ item = ref new ListBoxItem();
-	auto style = App::Current->Resources->Lookup("ListItemTextStyle");*/
+	//consoleFile->WriteTextToFile("Job number: " + jobNumString);
+
+	////_serialPort = ref new Windows::Devices::SerialCommunication::SerialDevice::FromIdAsync(entry->Id);
+
+	//TextBlock^ txtBlock = ref new TextBlock();
+	//ListBoxItem^ lbItem = ref new ListBoxItem();
+	//txtBlock->Text = consoleFile->ReadTextFromFile();
+
+	//lbItem->Content = txtBlock;
+	//itemCollection->Append(lbItem);
 
 	// TODO: implement necessary functions in console
+
+	//SerialProgressBar->Value = 25;
+
+	if (_serialPort != nullptr)
+	{
+
+		try
+		{
+			if (jobIdNumTxtBlock->Text->Length() > 0)
+			{
+				WriteAsync(cancellationTokenSource->get_token());
+			}
+			else
+			{
+				//status->Text = "Enter the text you want to write and then click on 'WRITE'";
+			}
+		}
+		catch (Platform::Exception ^ex)
+		{
+			//status->Text = "sendTextButton_Click: " + ex->Message;
+		}
+	}
+	else
+	{
+		//status->Text = "Select a device and connect";
+	}
 }
 
-
+int main() 
+{
+}
 
 void VEELB::MainPage::ScreenSaverGrid_Tapped(Platform::Object^ sender, Windows::UI::Xaml::Input::TappedRoutedEventArgs^ e)
 {
@@ -508,18 +567,26 @@ void VEELB::MainPage::toggleHistoryBtn_Click(Platform::Object^ sender, Windows::
 
 void VEELB::MainPage::startBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
+	Device^ selectedDevice = static_cast<Device^>(_availableDevices->GetAt(0));
+	Windows::Devices::Enumeration::DeviceInformation ^entry = selectedDevice->DeviceInfo;
+
+	concurrency::create_task(ConnectToSerialDeviceAsync(entry, cancellationTokenSource->get_token()));
+
 	SplashScreenGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
 	MainGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;
+
+	ProgressGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;
 }
 
 
-void VEELB::MainPage::exitWebcamBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
+void VEELB::MainPage::exitJobNumberBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
-	onExit = true;
-
-	WebcamFeedGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
+	JobNumberGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
 	MainGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;
+
+	// TODO: retrieve last job 
 }
+
 
 void VEELB::MainPage::sleepBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
@@ -532,12 +599,254 @@ void VEELB::MainPage::sleepBtn_Click(Platform::Object^ sender, Windows::UI::Xaml
 }
 
 
-void VEELB::MainPage::settingsWebcamBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
+void MainPage::settingsWebcamBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
 	WebcamSplitter->IsPaneOpen = !WebcamSplitter->IsPaneOpen;
+	//SerialProgressBar->Value = 50;
 }
 
-int main()
+// Serial comms
+void MainPage::ConnectToTracer()
 {
+	/*_availableDevices = ref new Platform::Collections::Vector<Platform::Object^>();
+	ListAvailablePorts();*/
+
+	/*Device^ selectedDevice = static_cast<Device^>(_availableDevices->GetAt(1));
+	Windows::Devices::Enumeration::DeviceInformation ^entry = selectedDevice->DeviceInfo;
+
+	concurrency::create_task(ConnectToSerialDeviceAsync(entry, cancellationTokenSource->get_token()));*/
 }
 
+void MainPage::sendJob(Platform::String^ jobNum)
+{
+	_availableDevices = ref new Platform::Collections::Vector<Platform::Object^>();
+	ListAvailablePorts(); // This method makes it break
+
+	Device^ selectedDevice = static_cast<Device^>(_availableDevices->GetAt(1));
+	Windows::Devices::Enumeration::DeviceInformation ^entry = selectedDevice->DeviceInfo;
+
+	concurrency::create_task(ConnectToSerialDeviceAsync(entry, cancellationTokenSource->get_token()));
+
+	//WriteAsync(cancellationTokenSource->get_token(), jobNum);
+}
+
+/// <summary>
+/// Finds all serial devices available on the device and populates a list with the Ids of each device.
+/// </summary>
+void MainPage::ListAvailablePorts(void)
+{
+	cancellationTokenSource = new Concurrency::cancellation_token_source();
+	// Using asynchronous operation, get a list of serial devices available on this device
+	
+		Concurrency::create_task(ListAvailableSerialDevicesAsync()).then([this](Windows::Devices::Enumeration::DeviceInformationCollection ^serialDeviceCollection)
+		{
+			/**** The program execution does not enter this code and I can't figure out why. Copy and pasted the SerialSample code which worked perfectly*/
+			Windows::Devices::Enumeration::DeviceInformationCollection ^_deviceCollection = serialDeviceCollection;
+
+			// start with an empty list
+			_availableDevices->Clear();
+
+			for (auto &&device : serialDeviceCollection)
+			{
+				_availableDevices->Append(ref new Device(device->Id, device));
+			}
+		});
+}
+
+/// <Summary>
+/// Determines if the device Id corresponds to the Tracer or another type of serial device since more
+/// devices may be connected to the Pi in the future for the company as they add features to their overall
+/// system of making lesnes
+bool MainPage::IsTracer(Platform::String^ id)
+{
+	if (id == "\\")
+		return true;
+	else
+		return false;
+}
+
+/// <summary>
+/// An asynchronous operation that returns a collection of DeviceInformation objects for all serial devices detected on the device.
+/// </summary>
+Windows::Foundation::IAsyncOperation<Windows::Devices::Enumeration::DeviceInformationCollection ^> ^MainPage::ListAvailableSerialDevicesAsync(void)
+{
+	// Construct AQS String for all serial devices on system
+	Platform::String ^serialDevices_aqs = Windows::Devices::SerialCommunication::SerialDevice::GetDeviceSelector();
+
+	// Identify all paired devices satisfying query
+	return Windows::Devices::Enumeration::DeviceInformation::FindAllAsync(serialDevices_aqs);
+}
+
+/// <summary>
+/// Creates a task chain that attempts connect to a serial device asynchronously. 
+/// </summary
+Concurrency::task<void> MainPage::ConnectToSerialDeviceAsync(Windows::Devices::Enumeration::DeviceInformation ^device1, Concurrency::cancellation_token cancellationToken)
+{
+	return Concurrency::create_task(Windows::Devices::SerialCommunication::SerialDevice::FromIdAsync(device1->Id), cancellationToken)
+		.then([this](Windows::Devices::SerialCommunication::SerialDevice ^serial_device)
+	{
+		try
+		{
+			//_serialPort = ref Windows::Devices::SerialCommunication::SerialDevice::FromIdAsync(comPortId);
+
+			_serialPort = serial_device;
+
+			Windows::Foundation::TimeSpan _timeOut;
+			_timeOut.Duration = 10000000L;
+
+			// Configure serial settings
+			_serialPort->WriteTimeout = _timeOut;
+			_serialPort->ReadTimeout = _timeOut;
+			_serialPort->BaudRate = 9600;
+			_serialPort->Parity = Windows::Devices::SerialCommunication::SerialParity::None;
+			_serialPort->StopBits = Windows::Devices::SerialCommunication::SerialStopBitCount::One;
+			_serialPort->DataBits = 8;
+			_serialPort->Handshake = Windows::Devices::SerialCommunication::SerialHandshake::None;
+
+			// setup our data reader for handling incoming data
+			_dataReaderObject = ref new Windows::Storage::Streams::DataReader(_serialPort->InputStream);
+			_dataReaderObject->InputStreamOptions = Windows::Storage::Streams::InputStreamOptions::Partial;
+
+			// setup our data writer for handling outgoing data
+			_dataWriterObject = ref new Windows::Storage::Streams::DataWriter(_serialPort->OutputStream);
+
+			// Setting this text will trigger the event handler that runs asynchronously for reading data from the input stream
+
+			Listen();
+		}
+		catch (Platform::Exception ^ex)
+		{
+			// perform any cleanup needed
+			CloseDevice();
+		}
+	});
+}
+
+/// <summary>
+/// Returns a task that sends the outgoing data from the sendText textbox to the output stream. 
+/// </summary
+//Concurrency::task<void> VEELB::MainPage::WriteAsync(Concurrency::cancellation_token cancellationToken, Platform::String^ messageToSend)
+//{
+//	_dataWriterObject->WriteString(messageToSend);
+//
+//	return concurrency::create_task(_dataWriterObject->StoreAsync(), cancellationToken).then([this](unsigned int bytesWritten)
+//	{
+//	});
+//}
+Concurrency::task<void> MainPage::WriteAsync(Concurrency::cancellation_token cancellationToken)
+{
+	_dataWriterObject->WriteString(jobIdNumTxtBlock->Text);
+
+	return concurrency::create_task(_dataWriterObject->StoreAsync(), cancellationToken).then([this](unsigned int bytesWritten)
+	{
+		if (bytesWritten > 0)
+		{
+			Status->Text += "bytes written successfully!";
+		}
+		jobIdNumTxtBlock->Text = "";
+	});
+}
+
+
+/// <summary>
+/// Returns a task that reads in the data from the input stream
+/// </summary
+Concurrency::task<void> VEELB::MainPage::ReadAsync(Concurrency::cancellation_token cancellationToken)
+{
+	unsigned int _readBufferLength = 2048;
+
+	return concurrency::create_task(_dataReaderObject->LoadAsync(_readBufferLength), cancellationToken).then([this](unsigned int bytesRead)
+	{
+		/*
+		Dynamically generate repeating tasks via "recursive" task creation - "recursively" call Listen() at the end of the continuation chain.
+		The "recursive" call is not true recursion. It will not accumulate stack since every recursive is made in a new task.
+		*/
+		if (bytesRead > 0)
+		{
+			Status->Text = _dataReaderObject->ReadString(bytesRead);
+		}
+		// start listening again after done with this chunk of incoming data
+		Listen();
+	});
+}
+
+/// <summary>
+/// Returns the sum of the data bits being sent so a checksum value can be sent to the TRacer for error control
+/// </sumary
+int CreateChecksum(Platform::String^ message)
+{
+	return 5;
+}
+
+/// <summary>
+/// Initiates task cancellation
+/// </summary
+void VEELB::MainPage::CancelReadTask(void)
+{
+	cancellationTokenSource->cancel();
+}
+
+/// <summary>
+/// Closes the comport currently connected
+/// </summary
+void VEELB::MainPage::CloseDevice(void)
+{
+	delete(_dataReaderObject);
+	_dataReaderObject = nullptr;
+
+	delete(_dataWriterObject);
+	_dataWriterObject = nullptr;
+
+	delete(_serialPort);
+	_serialPort = nullptr;
+
+}
+
+/// <summary>
+/// Event handler that starts listening the serial port input
+/// </summary
+void VEELB::MainPage::Listen()
+{
+	try
+	{
+		if (_serialPort != nullptr)
+		{
+			// calling task.wait() is not allowed in Windows Runtime STA (Single Threaded Apartment) threads due to blocking the UI.
+			concurrency::create_task(ReadAsync(cancellationTokenSource->get_token()));
+		}
+	}
+	catch (Platform::Exception ^ex)
+	{
+		if (ex->GetType()->FullName == "TaskCanceledException")
+		{
+			CloseDevice();
+		}
+		else
+		{
+		}
+	}
+}
+
+Device::Device(Platform::String^ id, Windows::Devices::Enumeration::DeviceInformation^ deviceInfo)
+{
+	_id = id;
+	_deviceInformation = deviceInfo;
+}
+
+
+void VEELB::MainPage::redSlider_ValueChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::Primitives::RangeBaseValueChangedEventArgs^ e)
+{
+	redSldr = redSlider->Value;
+}
+
+
+void VEELB::MainPage::greenSlider_ValueChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::Primitives::RangeBaseValueChangedEventArgs^ e)
+{
+	greenSldr = greenSlider->Value;
+}
+
+
+void VEELB::MainPage::blueSlider_ValueChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::Primitives::RangeBaseValueChangedEventArgs^ e)
+{
+	blueSldr = blueSlider->Value;
+}
