@@ -1,8 +1,10 @@
-//
-// JobViewModel.cpp
-// Implementation of the JobViewModel class. 
-// This class perfoms the creating of individual jobs, and retreiving the coordinates for crosshair placement
-//
+/// JobViewModel.cpp
+/// <summary>
+/// Implementation of the JobViewModel class. 
+/// This class perfoms the creating of individual jobs, and retreiving the coordinates for crosshair placement
+/// </summary>
+/// <author> Brayden Folk </author>
+/// <author> Petra Kujawa </author>
 
 #include "pch.h"
 #include "JobViewModel.h"
@@ -21,7 +23,7 @@ void JobViewModel::Run(IBackgroundTaskInstance^ taskInstance)
 
 JobViewModel::JobViewModel(int jobNumber1)
 {
-	jobNumber = jobNumber1;
+	_jobNumber = jobNumber1;
 }
 
 
@@ -32,7 +34,7 @@ JobViewModel::JobViewModel()
 
 int JobViewModel::getJobNumber()
 {
-	return jobNumber;
+	return _jobNumber;
 }
 
 
@@ -46,19 +48,19 @@ void JobViewModel::Start(IBackgroundTaskInstance^ taskInstance)
 }
 
 
-int JobViewModel::getXPosition()
+double JobViewModel::getXPosition()
 {
-	return xPosition;
+	return _xPosition;
 }
 
 
-int JobViewModel::getYPosition()
+double JobViewModel::getYPosition()
 {
-	return yPosition;
+	return _yPosition;
 }
 
 
 void JobViewModel::setData(byte inData)
 {
-	data += inData;
+	_data += inData;
 }

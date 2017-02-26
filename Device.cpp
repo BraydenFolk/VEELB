@@ -1,8 +1,8 @@
-//
-// Device.cpp
-// Implementation of the Device class. 
-// This class creates instances of serial Devices
-//
+/// MDevice.cpp
+/// <summary>
+/// Implementation of Device class. Creates new instances of Devices.
+/// </summary>
+/// <author> Petra Kujawa </author>
 
 #include "pch.h"
 #include "Device.h"

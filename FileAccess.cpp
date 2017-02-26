@@ -1,3 +1,10 @@
+/// FileAccess.cpp
+/// <summary>
+/// Implementation of FileAccess class. Provides methods for accessing the config file where settings are stored.
+/// </summary>
+/// <author> Brayden Folk </author>
+/// <author> Petra Kujawa </author>
+
 #include "pch.h"
 #include "FileAccess.h"
 
@@ -8,9 +15,9 @@ using namespace Platform;
 using namespace Windows::Storage;
 using namespace Windows::UI::Xaml;
 
-FileAccess::FileAccess(Platform::String^ fileName1)
+FileAccess::FileAccess(Platform::String^ _fileName1)
 {
-	fileName = fileName1;
+	_fileName = _fileName1;
 	CreateFile();
 }
 
@@ -23,13 +30,13 @@ void FileAccess::CreateFile()
 	create_task(KnownFolders::GetFolderForUserAsync(nullptr, KnownFolderId::DocumentsLibrary))
 		.then([this](StorageFolder^ documentsFolder)
 	{
-		Platform::String^ fileName1 = fileName;
-		return documentsFolder->CreateFileAsync(fileName, CreationCollisionOption::OpenIfExists);
+		Platform::String^ _fileName1 = _fileName;
+		return documentsFolder->CreateFileAsync(_fileName, CreationCollisionOption::OpenIfExists);
 	}).then([this](task<StorageFile^> task)
 	{
 		try
 		{
-			sampleFile = task.get();
+			_sampleFile = task.get();
 			// success
 		}
 		catch (Platform::Exception^ e)
@@ -42,7 +49,7 @@ void FileAccess::CreateFile()
 
 bool FileAccess::WriteTextToFile(Platform::String^ inputText)
 {
-	StorageFile^ tempFile = sampleFile;
+	StorageFile^ tempFile = _sampleFile;
 	if (tempFile != nullptr)
 	{
 		Platform::String^ userContent = inputText;
@@ -75,7 +82,7 @@ bool FileAccess::WriteTextToFile(Platform::String^ inputText)
 
 Platform::String^ FileAccess::ReadTextFromFile()
 {
-	StorageFile^ tempFile = sampleFile;
+	StorageFile^ tempFile = _sampleFile;
 	if (tempFile != nullptr)
 	{
 		create_task(FileIO::ReadTextAsync(tempFile)).then([this, tempFile](task<Platform::String^> task)

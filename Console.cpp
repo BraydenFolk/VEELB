@@ -1,7 +1,8 @@
-//
-// Console.cpp
-// TODO: make comment
-//
+/// Console.cpp
+/// <summary>
+/// Implementation of the Console class
+/// </summary>
+/// <author> Brayden Folk </author>
 
 #include "pch.h"
 #include "Console.h"

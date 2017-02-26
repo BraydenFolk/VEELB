@@ -1,4 +1,13 @@
+/// JobViewModel.h
+/// <summary>
+/// Header file for the JobViewModel class
+/// </summary>
+/// <author> Brayden Folk </author>
+/// <author> Petra Kujawa </author>
+
 #pragma once
+
+
 namespace VEELB
 {
 	public ref class JobViewModel sealed
@@ -9,14 +18,14 @@ namespace VEELB
 		JobViewModel(int jobNumber);
 		JobViewModel();
 		int getJobNumber();
-		int getXPosition();
-		int getYPosition();
+		double getXPosition();
+		double getYPosition();
 		void setData(byte inData);
 
 	private:
-		int jobNumber;
-		double xPosition;
-		double yPosition;
-		unsigned int data;
+		int _jobNumber;
+		double _xPosition;
+		double _yPosition;
+		unsigned int _data;
 	};
 }

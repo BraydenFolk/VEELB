@@ -1,8 +1,11 @@
-﻿//
-// MainPage.xaml.cpp
-// Implementation of the MainPage class.
-// This class perfoms the event handling of user input and the image processing functions.
-//
+﻿/// MainPage.xaml.cpp
+/// <summary>
+/// Implementation of the MainPage class.
+/// This class perfoms the event handling of user input, the image processing functions. TODO: Move image processing to own file?
+/// </summary>
+/// <author> Brayden Folk </author>
+/// <author> Petra Kujawa </author>
+
 
 #include "pch.h"
 #include "MainPage.xaml.h"
@@ -40,9 +43,7 @@ using namespace Windows::UI::Xaml::Data;
 using namespace Windows::UI::Xaml::Input;
 using namespace Windows::UI::Xaml::Media;
 using namespace Windows::UI::Xaml::Navigation;
-
 using namespace Windows::Storage;
-
 using namespace Windows::UI::Xaml::Media::Imaging;
 using namespace Windows::Storage::Streams;
 using namespace Microsoft::WRL;
@@ -52,7 +53,6 @@ using namespace std;
 
 
 void Compare(Mat frame, Mat oldFrame, Mat grayScale);
-
 
 //our sensitivity value to be used in the threshold() function
 const static int SENSITIVITY_VALUE = 20;
@@ -70,9 +70,9 @@ int detectType = 0;
 VideoCapture cam;
 int xPos = 235;
 int yPos = 235;
-int redSldr = 0;
-int greenSldr = 0;
-int blueSldr = 0;
+double redSldr = 0;
+double greenSldr = 0;
+double blueSldr = 0;
 JobViewModel^ job;
 FileAccess^ consoleFile;
 FileAccess^ configFile;
@@ -103,8 +103,8 @@ void cvVideoTask()
 	vector<vector<cv::Point> > contours;
 	vector<Vec4i> hierarchy;
 
-	/*xPos = job->getXPosition;
-	yPos = job->getYPosition;*/
+	/*xPos = job->getXPosition();
+	yPos = job->getYPosition();*/
 
 	cam.open(0);
 	while (1)
@@ -234,7 +234,7 @@ void VEELB::MainPage::UpdateImage(const cv::Mat& image)
 	// Create the WriteableBitmap
 	WriteableBitmap^ bitmap = ref new WriteableBitmap(image.cols, image.rows);
 
-	// Get access to the pixels
+	// Get access to the pixels in the image
 	IBuffer^ buffer = bitmap->PixelBuffer;
 	unsigned char* dstPixels = nullptr;
 
@@ -387,69 +387,69 @@ void VEELB::MainPage::enterJobNumberBtn_Click(Platform::Object^ sender, Windows:
 void VEELB::MainPage::oneBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
 	jobIdNumTxtBlock->Text += "1";
-	jobNumString = jobIdNumTxtBlock->Text;
+	_jobNumString = jobIdNumTxtBlock->Text;
 }
 
 void VEELB::MainPage::twoBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
 	jobIdNumTxtBlock->Text += "2";
-	jobNumString = jobIdNumTxtBlock->Text;
+	_jobNumString = jobIdNumTxtBlock->Text;
 }
 
 
 void VEELB::MainPage::threeBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
 	jobIdNumTxtBlock->Text += "3";
-	jobNumString = jobIdNumTxtBlock->Text;
+	_jobNumString = jobIdNumTxtBlock->Text;
 }
 
 
 void VEELB::MainPage::fourBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
 	jobIdNumTxtBlock->Text += "4";
-	jobNumString = jobIdNumTxtBlock->Text;
+	_jobNumString = jobIdNumTxtBlock->Text;
 }
 
 
 void VEELB::MainPage::fiveBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
 	jobIdNumTxtBlock->Text += "5";
-	jobNumString = jobIdNumTxtBlock->Text;
+	_jobNumString = jobIdNumTxtBlock->Text;
 }
 
 
 void VEELB::MainPage::sixBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
 	jobIdNumTxtBlock->Text += "6";
-	jobNumString = jobIdNumTxtBlock->Text;
+	_jobNumString = jobIdNumTxtBlock->Text;
 }
 
 
 void VEELB::MainPage::sevenBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
 	jobIdNumTxtBlock->Text += "7";
-	jobNumString = jobIdNumTxtBlock->Text;
+	_jobNumString = jobIdNumTxtBlock->Text;
 }
 
 
 void VEELB::MainPage::eightBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
 	jobIdNumTxtBlock->Text += "8";
-	jobNumString = jobIdNumTxtBlock->Text;
+	_jobNumString = jobIdNumTxtBlock->Text;
 }
 
 
 void VEELB::MainPage::nineBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
 	jobIdNumTxtBlock->Text += "9";
-	jobNumString = jobIdNumTxtBlock->Text;
+	_jobNumString = jobIdNumTxtBlock->Text;
 }
 
 
 void VEELB::MainPage::zeroBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
 	jobIdNumTxtBlock->Text += "0";
-	jobNumString = jobIdNumTxtBlock->Text;
+	_jobNumString = jobIdNumTxtBlock->Text;
 }
 
 
@@ -461,7 +461,7 @@ void VEELB::MainPage::backspaceBtn_Click(Platform::Object^ sender, Windows::UI::
 	{
 		string jobIdStdString = convertPlatformStringToStandardString(number);
 		jobIdNumTxtBlock->Text = convertStringToPlatformString(jobIdStdString);
-		jobNumString = jobIdNumTxtBlock->Text;
+		_jobNumString = jobIdNumTxtBlock->Text;
 	}
 }
 
@@ -486,26 +486,26 @@ Platform::String^ VEELB::MainPage::convertStringToPlatformString(string inputStr
 void VEELB::MainPage::clearBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
 	jobIdNumTxtBlock->Text = "";
-	jobNumString = jobIdNumTxtBlock->Text;
+	_jobNumString = jobIdNumTxtBlock->Text;
 }
 
 
 void MainPage::returnBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
-	bool isValid = jobIdNumTxtBlock->Text->Length == 6;
-	jobNumInt = _wtoi(jobNumString->Data());
+	bool isValid = jobIdNumTxtBlock->Text->Length() == 6;
+	_jobNumInt = _wtoi(_jobNumString->Data());
 
-	job = ref new JobViewModel(jobNumInt);
+	job = ref new JobViewModel(_jobNumInt);
 
 	//xPos = job->getXPosition();
 
 	// save last returned number
-	mainGridJobNumberTxtBlk->Text = "Job number for session: " + jobNumString;
+	mainGridJobNumberTxtBlk->Text = "Job number for session: " + _jobNumString;
 
 	JobNumberGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
 	MainGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;
 
-	//consoleFile->WriteTextToFile("Job number: " + jobNumString);
+	//consoleFile->WriteTextToFile("Job number: " + _jobNumString);
 
 	////_serialPort = ref new Windows::Devices::SerialCommunication::SerialDevice::FromIdAsync(entry->Id);
 
@@ -526,7 +526,7 @@ void MainPage::returnBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::Rout
 		{
 			if (isValid)
 			{
-				WriteAsync(cancellationTokenSource->get_token(), jobNumInt);
+				WriteAsync(_cancellationTokenSource->get_token(), _jobNumInt);
 			}
 			else
 			{
@@ -566,7 +566,7 @@ void VEELB::MainPage::startBtn_Click(Platform::Object^ sender, Windows::UI::Xaml
 	Device^ selectedDevice = static_cast<Device^>(_availableDevices->GetAt(0));
 	Windows::Devices::Enumeration::DeviceInformation ^entry = selectedDevice->DeviceInfo;
 
-	concurrency::create_task(ConnectToSerialDeviceAsync(entry, cancellationTokenSource->get_token()));
+	concurrency::create_task(ConnectToSerialDeviceAsync(entry, _cancellationTokenSource->get_token()));
 
 	SplashScreenGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
 	MainGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;
@@ -609,7 +609,7 @@ void MainPage::settingsWebcamBtn_Click(Platform::Object^ sender, Windows::UI::Xa
 /// </summary>
 void MainPage::ListAvailablePorts(void)
 {
-	cancellationTokenSource = new Concurrency::cancellation_token_source();
+	_cancellationTokenSource = new Concurrency::cancellation_token_source();
 
 	// Using asynchronous operation, get a list of serial devices available on this device
 	Concurrency::create_task(ListAvailableSerialDevicesAsync()).then([this](Windows::Devices::Enumeration::DeviceInformationCollection ^serialDeviceCollection)
@@ -700,6 +700,8 @@ Concurrency::task<void> MainPage::ConnectToSerialDeviceAsync(Windows::Devices::E
 
 /// <summary>
 /// Returns a task that sends the outgoing data from the sendText textbox to the output stream. 
+/// <param name = cancellationToken> a cancellation token for creating tasks </param>
+
 /// </summary
 Concurrency::task<void> MainPage::WriteAsync(Concurrency::cancellation_token cancellationToken, int jobNum)
 {
@@ -786,7 +788,7 @@ Concurrency::task<void> VEELB::MainPage::ReadAsync(Concurrency::cancellation_tok
 /// </summary
 void VEELB::MainPage::CancelReadTask(void)
 {
-	cancellationTokenSource->cancel();
+	_cancellationTokenSource->cancel();
 }
 
 
@@ -815,7 +817,7 @@ void VEELB::MainPage::Listen()
 	{
 		if (_serialPort != nullptr)
 		{
-			concurrency::create_task(ReadAsync(cancellationTokenSource->get_token()));
+			concurrency::create_task(ReadAsync(_cancellationTokenSource->get_token()));
 		}
 	}
 	catch (Platform::Exception ^ex)

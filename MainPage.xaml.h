@@ -1,7 +1,9 @@
-﻿//
-// MainPage.xaml.h
-// Header file for the main class
-//
+﻿/// MainPage.xaml.h
+/// <summary>
+/// Header file for the main class
+/// </summary>
+/// <author> Brayden Folk </author>
+/// <author> Petra Kujawa </author>
 
 #pragma once
 
@@ -42,17 +44,17 @@ namespace VEELB
 			}
 		}
 	private: // Properties
-		cv::Mat _stored_image;
-		Platform::String^ jobNumString;
-		int jobNumInt;
-		WriteableBitmap^ ImageSource = ref new WriteableBitmap(4, 5);
+		cv::Mat _storedImage;
+		Platform::String^ _jobNumString;
+		int _jobNumInt;
+		WriteableBitmap^ _imageSource = ref new WriteableBitmap(4, 5);
 
 		// Serial comms 
 		Platform::Collections::Vector<Platform::Object^>^ _availableDevices;
 		Windows::Devices::SerialCommunication::SerialDevice ^_serialPort;
 		Windows::Storage::Streams::DataWriter^ _dataWriterObject;
 		Windows::Storage::Streams::DataReader^ _dataReaderObject;
-		Concurrency::cancellation_token_source* cancellationTokenSource;
+		Concurrency::cancellation_token_source* _cancellationTokenSource;
 
 	private: // methods
 		// Event handlers

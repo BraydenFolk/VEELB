@@ -1,9 +1,11 @@
-//
-// Device.h
-// Header file for Device class
-//
+/// Device.h
+/// <summary>
+/// Header file for the Device class
+/// </summary>
+/// <author> Petra Kujawa </author>
 
 #pragma once
+
 
 using namespace Windows::Devices::Enumeration;
 using namespace std;
