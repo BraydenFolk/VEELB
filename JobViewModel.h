@@ -1,7 +1,4 @@
 #pragma once
-#include "SerialCommsViewModel.h"
-using namespace std;
-
 namespace VEELB
 {
 	public ref class JobViewModel sealed
@@ -9,18 +6,17 @@ namespace VEELB
 	public:
 		void Run(Windows::ApplicationModel::Background::IBackgroundTaskInstance^ taskInstance);
 		void Start(Windows::ApplicationModel::Background::IBackgroundTaskInstance^ taskInstance);
-		JobViewModel(Platform::String^ jobNumber, SerialCommsViewModel^ serialModel);
-		JobViewModel(); 
-		Platform::String^ getJobNumber();
+		JobViewModel(int jobNumber);
+		JobViewModel();
+		int getJobNumber();
 		int getXPosition();
 		int getYPosition();
-		void setDataReceived(Platform::String^ inData);
+		void setData(byte inData);
 
 	private:
-		Platform::String^ jobNumber;
+		int jobNumber;
 		double xPosition;
 		double yPosition;
-		Platform::String^ dataReceived;
+		unsigned int data;
 	};
 }
-

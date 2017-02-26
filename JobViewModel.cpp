@@ -1,30 +1,40 @@
+//
+// JobViewModel.cpp
+// Implementation of the JobViewModel class. 
+// This class perfoms the creating of individual jobs, and retreiving the coordinates for crosshair placement
+//
+
 #include "pch.h"
 #include "JobViewModel.h"
-#include "SerialCommsViewModel.h"
-#include "MainPage.xaml.h"
 
 using namespace VEELB;
 using namespace Windows::ApplicationModel::Background;
 using namespace Windows::Foundation;
 using namespace Windows::Storage;
 using namespace Windows::System::Threading;
-using namespace std;
 
 
 void JobViewModel::Run(IBackgroundTaskInstance^ taskInstance)
 {
-
 }
 
-JobViewModel::JobViewModel(Platform::String^ jobNumberIn, SerialCommsViewModel^ serialViewModel)
+
+JobViewModel::JobViewModel(int jobNumber1)
 {
-	jobNumber = jobNumberIn;
-	serialViewModel->sendJob(jobNumber);
+	jobNumber = jobNumber1;
 }
+
 
 JobViewModel::JobViewModel()
 {
 }
+
+
+int JobViewModel::getJobNumber()
+{
+	return jobNumber;
+}
+
 
 void JobViewModel::Start(IBackgroundTaskInstance^ taskInstance)
 {
@@ -35,21 +45,20 @@ void JobViewModel::Start(IBackgroundTaskInstance^ taskInstance)
 	activity->Run(taskInstance);
 }
 
-void JobViewModel::setDataReceived(Platform::String^ inData)
-{
-	dataReceived = inData;
-}
 
-Platform::String^ JobViewModel::getJobNumber()
-{
-	return jobNumber;
-}
 int JobViewModel::getXPosition()
 {
 	return xPosition;
 }
 
+
 int JobViewModel::getYPosition()
 {
 	return yPosition;
+}
+
+
+void JobViewModel::setData(byte inData)
+{
+	data += inData;
 }
