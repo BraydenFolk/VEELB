@@ -73,10 +73,6 @@ namespace VEELB
 		void zeroBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 		void backspaceBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 		void clearBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
-		void VEELB::MainPage::screenSaverAnimation();
-		// UI Functions
-		void VEELB::MainPage::UpdateImage(const cv::Mat& image);
-		void VEELB::MainPage::CameraFeed();
 		void returnBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 		void ScreenSaverGrid_Tapped(Platform::Object^ sender, Windows::UI::Xaml::Input::TappedRoutedEventArgs^ e);
 		void exitWebcamBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
@@ -85,8 +81,16 @@ namespace VEELB
 		void exitJobNumberBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 		void sleepBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 		void settingsWebcamBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+		void redSlider_ValueChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::Primitives::RangeBaseValueChangedEventArgs^ e);
+		void greenSlider_ValueChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::Primitives::RangeBaseValueChangedEventArgs^ e);
+		void blueSlider_ValueChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::Primitives::RangeBaseValueChangedEventArgs^ e);
+		// UI Functions
+		void VEELB::MainPage::UpdateImage(const cv::Mat& image);
+		void VEELB::MainPage::CameraFeed();
+		void VEELB::MainPage::screenSaverAnimation();
 		string VEELB::MainPage::convertPlatformStringToStandardString(Platform::String^ inputString);
 		Platform::String^ VEELB::MainPage::convertStringToPlatformString(string inputString);
+	private:
 		// Serial comms
 		Platform::Collections::Vector<Platform::Object^>^ _availableDevices;
 		Windows::Devices::SerialCommunication::SerialDevice ^_serialPort;
@@ -96,7 +100,6 @@ namespace VEELB
 
 		void ListAvailablePorts(void);
 		bool IsTracer(Platform::String^ id);
-		int CreateChecksum(Platform::String^ message);
 		void CancelReadTask(void);
 		void CloseDevice(void);
 		void Listen();
@@ -105,10 +108,45 @@ namespace VEELB
 		Concurrency::task<void> MainPage::WriteAsync(Concurrency::cancellation_token cancellationToken);
 		Concurrency::task<void> ReadAsync(Concurrency::cancellation_token cancellationToken);
 		Concurrency::task<void> ConnectToSerialDeviceAsync(Windows::Devices::Enumeration::DeviceInformation ^device, Concurrency::cancellation_token cancellationToken);
-		void redSlider_ValueChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::Primitives::RangeBaseValueChangedEventArgs^ e);
-		void greenSlider_ValueChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::Primitives::RangeBaseValueChangedEventArgs^ e);
-		void blueSlider_ValueChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::Primitives::RangeBaseValueChangedEventArgs^ e);
-	};
+	private:
+		//file access
+		void CreateFile(int fileType);
+		Windows::Storage::StorageFile^ configFile;
+		Windows::Storage::StorageFile^ logFile;
+		cv::Mat img;
+	public:
+		//file access
+		bool WriteTextToFile(int fileType, Platform::String^ inputText);
+		void ReadTextFromFile(int fileType);
+	internal:
+		//file access
+		property Windows::Storage::StorageFile^ ConfigFile
+		{
+			Windows::Storage::StorageFile^ get()
+			{
+				return configFile;
+			}
+			void set(Windows::Storage::StorageFile^ value)
+			{
+				configFile = value;
+			}
+		}
+		property Windows::Storage::StorageFile^ LogFile
+		{
+			Windows::Storage::StorageFile^ get()
+			{
+				return logFile;
+			}
+			void set(Windows::Storage::StorageFile^ value)
+			{
+				logFile = value;
+			}
+		}
+	private:
+		void thicknessSlider_ValueChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::Primitives::RangeBaseValueChangedEventArgs^ e);
+		void saveSettingsChanges_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+		void settingsBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+};
 	public ref class Device sealed
 	{
 	public:

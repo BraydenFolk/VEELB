@@ -70,6 +70,7 @@ int yPos = 235;
 int redSldr = 0;
 int greenSldr = 0;
 int blueSldr = 0;
+int thicknessSldr = 0;
 JobViewModel^ job;
 FileAccess^ consoleFile;
 FileAccess^ configFile;
@@ -81,18 +82,26 @@ auto itemCollection = ref new Platform::Collections::Vector<Object^>();
 MainPage::MainPage()
 {
 	InitializeComponent();
+
+	Status->Text = "Initializing...";
+	progBar->Value = 10;
 	/*Windows::ApplicationModel::Email::EmailMessage^ temp = ref new Windows::ApplicationModel::Email::EmailMessage();
 	
 	StorageFile^ attachmentFile;
 	Windows::Storage::Streams::RandomAccessStreamReference^ stream = Windows::Storage::Streams::RandomAccessStreamReference::CreateFromFile(attachmentFile);*/
 	_availableDevices = ref new Platform::Collections::Vector<Platform::Object^>();
 	ListAvailablePorts();
-
-	consoleFile = ref new FileAccess("console.txt");
-	configFile = ref new FileAccess(L"config.dat");
+	progBar->Value = 50;
+	CreateFile(1);
+	CreateFile(2);
+	progBar->Value = 100;
 }
 
 // Webcam functions
+/// <summary>
+/// Background message loop task for webcam feed, allows for functionality such as initializing the webcam,
+///		retrieving frames from the webcam and passes frames to compare which is where the main work is being done.
+/// </summary>
 void cvVideoTask()
 {
 	cv::Mat frame, oldFrame, tmp, grayScale, canny, canny_output;
@@ -104,6 +113,8 @@ void cvVideoTask()
 	yPos = job->getYPosition;*/
 
 	cam.open(0);
+	
+	//cv::winrt_imshow();
 	while (1)
 	{
 		// get a new frame from camera - this is non-blocking per spec
@@ -112,7 +123,7 @@ void cvVideoTask()
 
 		if (frame.rows > 0 && frame.cols > 0)
 		{
-			
+			frame.copyTo(tmp);
 			Compare(frame, oldFrame, grayScale);
 			tmp.copyTo(oldFrame);
 			
@@ -129,7 +140,13 @@ void cvVideoTask()
 	cam.release();
 }
 
-int seuil = 10;
+struct darkCoords
+{
+	int row;
+	int col;
+};
+
+int seuil = 20;
 void Compare(Mat frame, Mat oldFrame, Mat grayScale)
 {
 	Mat canny, gray;
@@ -138,6 +155,10 @@ void Compare(Mat frame, Mat oldFrame, Mat grayScale)
 	int topY = 0;
 	int bottomX = 0;
 	int bottomY = 0;
+	int leftY = 0;
+	//int topX = 0;
+	int rightY = 0;
+	//int bottomY = 0;
 	int first = 0;
 	int changed = 0;
 	int thresh = 100;
@@ -145,25 +166,19 @@ void Compare(Mat frame, Mat oldFrame, Mat grayScale)
 	double blue = (double)blueSldr;
 	double green = (double)greenSldr;
 	double red = (double)redSldr;
+	double thickness = (double)thicknessSldr;	
 
-	cv::line(frame, cv::Point(xPos, yPos - 10), cv::Point(xPos, yPos + 10), Scalar(red, green, blue), 3);
-	cv::line(frame, cv::Point(xPos - 10, yPos), cv::Point(xPos + 10, yPos), Scalar(red, green, blue), 3);
-	cv::circle(frame, cv::Point(xPos, yPos), radius, Scalar(red, green, blue), 10, 8, 0);
-	//cv::circle(frame, cv::Point(xPos, yPos), radius, Scalar(0, 204, 0), 10, 8, 0);
-
-	cvtColor(frame, gray, CV_BGR2GRAY); // convert to grayscale
-	//blur(gray, gray, cv::Size(3, 3)); // blur converted mat
-
-	Canny(gray, canny, thresh, thresh * 2, 3); // apply canny filter to image
 	try
 	{
+		// starts top-left
 		for (int i = 0; i < frame.rows; i++)
 		{
 			for (int j = 0; j < frame.cols; j++)
 			{
 				Vec3b colour = frame.at<Vec3b>(i, j);
-				//Scalar colour = gray.at<uchar>(cv::Point(i, j));
-				/*if (colour.val[0] == 255 && colour.val[1] == 255 && colour.val[2] == 255)
+				bool edge = true;
+
+				if (colour.val[0] < 60 && colour.val[1] < 60 && colour.val[2] < 60)
 				{
 					frame.at<Vec3b>(i, j)[0] = 255;
 					frame.at<Vec3b>(i, j)[1] = 0;
@@ -171,46 +186,39 @@ void Compare(Mat frame, Mat oldFrame, Mat grayScale)
 
 					if (first == 0)
 					{
+						/*topX = i;
+						topY = j;*/
 						topX = i;
-						topY = j;
-						first = 1;
+						leftY = j;
+
+						int clusterCtr = 0;
+						for (int p = 0; p < 7; p++)
+						{
+							Vec3b clusterColour = frame.at<Vec3b>(i, j+p);
+
+							if (clusterColour.val[0] < 60 && clusterColour.val[1] < 60 && clusterColour.val[2] < 60)
+							{
+								clusterCtr++;
+								if (clusterCtr > 15)
+								{
+									break;
+								}
+							}
+						}
+
+						if (clusterCtr > 5)
+						{
+							first = 1;
+
+						}
 					}
 
+
+
+					/*bottomX = i;
+					bottomY = j;*/
 					bottomX = i;
-					bottomY = j;
-				}*/
-				/*if (colour.val[0] == 255)
-				{
-					frame.at<Vec3b>(i, j)[0] = 255;
-					frame.at<Vec3b>(i, j)[1] = 0;
-					frame.at<Vec3b>(i, j)[2] = 0;
-
-					if (first == 0)
-					{
-						topX = i;
-						topY = j;
-						first = 1;
-					}
-
-					bottomX = i;
-					bottomY = j;
-				}*/
-
-				if (colour.val[0] < 100 && colour.val[1] < 100 && colour.val[2] < 100)
-				{
-					frame.at<Vec3b>(i, j)[0] = 255;
-					frame.at<Vec3b>(i, j)[1] = 0;
-					frame.at<Vec3b>(i, j)[2] = 0;
-
-					if (first == 0)
-					{
-						topX = i;
-						topY = j;
-						first = 1;
-					}
-
-					bottomX = i;
-					bottomY = j;
+					rightY = j;
 				}
 			}
 		}
@@ -220,11 +228,39 @@ void Compare(Mat frame, Mat oldFrame, Mat grayScale)
 		Platform::String^ temp = e->Message;
 	}
 
+	int compareCtr = 0;
+	if (oldFrame.rows == 0)
+		return;
+	for (int i = 0; i < frame.rows; i++)
+	{
+		for (int j = 0; j < frame.cols; j++)
+		{
+			if (abs(frame.at<cv::Vec3b>(i, j)[2] - oldFrame.at<cv::Vec3b>(i, j)[2]) >seuil &&
+				abs(frame.at<cv::Vec3b>(i, j)[0] - oldFrame.at<cv::Vec3b>(i, j)[0]) >seuil&&
+				abs(frame.at<cv::Vec3b>(i, j)[1] - oldFrame.at<cv::Vec3b>(i, j)[1]) > seuil)
+			{
+				compareCtr++;
+			}
+		}
+	}
 
-	int tempx = topX + (bottomX - topX) / 2;
-	int tempy = (topY + bottomY) / 2;
+	cv::line(frame, cv::Point(xPos, yPos - 10), cv::Point(xPos, yPos + 10), Scalar(red, green, blue), thickness);
+	cv::line(frame, cv::Point(xPos - 10, yPos), cv::Point(xPos + 10, yPos), Scalar(red, green, blue), thickness);
 
-	radius = (bottomX - topX) / 2;
+	if (compareCtr > 1000 || abs(leftY - rightY) < 50)
+	{
+		return;
+	}
+
+	// Template line
+	cv::line(frame, cv::Point(0, 0), cv::Point(frame.cols, 0), Scalar(red, green, blue), thickness); 
+
+	int midX = (topX + bottomX) / 2;
+	int midY = (leftY + rightY) / 2;
+
+	cv::circle(frame, cv::Point(midY, midX), thickness, Scalar(150, 255, 0), 4, 8, 0);
+	cv::line(frame, cv::Point(midY, midX + 25), cv::Point(midY, midX - 25), Scalar(red, green, blue), thickness);
+	cv::line(frame, cv::Point(leftY, topX+5), cv::Point(rightY, bottomX -5), Scalar(red, green, blue), thickness);	
 }
 
 // UI Functions
@@ -267,19 +303,46 @@ void VEELB::MainPage::CameraFeed()
 	vector<Vec4i> hierarchy;
 
 	VideoCapture cap;
-
+	//winrt_setFrameContainer(imgCV);
 	RNG rng(12345);
 
 	try
 	{
 		cap.open(0);
-		cap >> src;
-		winrt_imshow();
-		Sleep(5000);
+		
+		if (!cap.isOpened())
+		{
+			vector<Vec4i> hierarchy1;
+		}
+		//cv::winrt_imshow();
+		Sleep(7000);
+		
+		//while (!cam.grab())
+		//{
+
+		//}
+		////Sleep(7000);
+
+		//while (cam.grab())
+		//{
+		//	try
+		//	{
+		//		cam >> src;
+		//	}
+		//	catch (Platform::Exception^ e)
+		//	{
+		//		Platform::String^ temp = e->Message;
+		//	}
+		//}
+
+		//cam >> src;
+		
 		while (1)
 		{
-			if (!cap.grab()) continue;
-			cap >> src;
+			//if (!cam.grab()) continue;
+			//cam >> src;
+
+			src = cap.retrieve(src);
 
 			if (src.rows == 0 || src.cols == 0)
 			{
@@ -314,11 +377,6 @@ void VEELB::MainPage::exitWebcamBtn_Click(Platform::Object^ sender, Windows::UI:
 
 	WebcamFeedGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
 	MainGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;
-
-	Platform::String^ txt = redSldr.ToString() + " " + greenSldr.ToString() + " " + blueSldr.ToString();
-	if (configFile->WriteTextToFile(txt))
-	{
-	}
 }
 
 // Event handlers
@@ -327,22 +385,49 @@ void VEELB::MainPage::Page_Loaded(Object^ sender, RoutedEventArgs^ e)
 {
 }
 
-
 void VEELB::MainPage::initBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
-	/*Status->Text = "Loading config...";
+	/*if (sender->Equals("settingsBtn"))
+	{
+		WebcamSplitter->IsPaneOpen = true;
+	}
+	else
+	{
+		WebcamSplitter->IsPaneOpen = false;
+	}*/
+
+	Status->Text = "Loading config...";
 	progBar->Value = 50;
 	Platform::String^ temp;
 	try
 	{
-		Platform::String^ config = configFile->ReadTextFromFile();
+		//Platform::String^ config = 
+		ReadTextFromFile(1);
+		Platform::String^ params = Status->Text;
+
+		// parse params
+		//string paramRed =
+		//wstring tempw(params->Begin());
+		//string paramRed(tempw.begin(), tempw.end());
+		//int pos1 = paramRed.find(" "); 
+		//tempw.
+		////string paramGreen =
+		////string paramBlue =
+
+		//wstring tempw(inputString->Begin());
+		//string jobIdStdString(tempw.begin(), tempw.end() - 1);
+		//return jobIdStdString;
+		//wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+		//wstring intermediateForm = converter.from_bytes(inputString);
+		//Platform::String^ retval = ref new Platform::String(intermediateForm.c_str());
+		//return retval;
 	}
 	catch (Platform::Exception^ e)
 	{
 		temp = e->Message;
 	}
 
-	progBar->Value = 100;*/
+	progBar->Value = 100;
 
 	MainGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
 	WebcamFeedGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;
@@ -356,18 +441,43 @@ void VEELB::MainPage::initBtn_Click(Platform::Object^ sender, Windows::UI::Xaml:
 
 void VEELB::MainPage::screenSaverAnimation()
 {//rows 768, cols 432
+	MainGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
+	//
 
-	screenSaverImg->Visibility = Windows::UI::Xaml::Visibility::Visible;
+	ScreenSaverGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;	
+	Sleep(3000);
+
 	while (1)
 	{
-		for (int i = 0; i < 760; i = i + 10)
+		for (int i = 0; i < 3; i++)
 		{
-			for (int j = 0; j < 430; j = j + 2)
+			switch (i)
 			{
-				//(left, top, right, bottom);
-				
-				screenSaverImg->Margin = Thickness((double)j, (double)i, (double)(432-j), (double)(768-0));
-				Sleep(1000);
+				case 1:
+					screenSaverImg->VerticalAlignment = Windows::UI::Xaml::VerticalAlignment::Top;
+					break;
+				case 2:
+					screenSaverImg->VerticalAlignment = Windows::UI::Xaml::VerticalAlignment::Center;
+					break;
+				case 3:
+					screenSaverImg->VerticalAlignment = Windows::UI::Xaml::VerticalAlignment::Bottom;
+					break;
+			}
+			for (int j = 0; j < 3; j++)
+			{
+				switch (j)
+				{
+					case 1:
+						screenSaverImg->HorizontalAlignment = Windows::UI::Xaml::HorizontalAlignment::Left;
+						break;
+					case 2:
+						screenSaverImg->HorizontalAlignment = Windows::UI::Xaml::HorizontalAlignment::Center;
+						break;
+					case 3:
+						screenSaverImg->HorizontalAlignment = Windows::UI::Xaml::HorizontalAlignment::Right;
+						break;
+				}
+				Sleep(2000);
 			}
 		}
 	}
@@ -515,15 +625,14 @@ void MainPage::returnBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::Rout
 
 	// TODO: implement necessary functions in console
 
-	//SerialProgressBar->Value = 25;
-
 	if (_serialPort != nullptr)
 	{
-
 		try
 		{
 			if (jobIdNumTxtBlock->Text->Length() > 0)
 			{
+				Status->Text = "Writing job number...";
+				progBar->Value = 10;
 				WriteAsync(cancellationTokenSource->get_token());
 			}
 			else
@@ -564,7 +673,6 @@ void VEELB::MainPage::toggleHistoryBtn_Click(Platform::Object^ sender, Windows::
 	}
 }
 
-
 void VEELB::MainPage::startBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
 	Device^ selectedDevice = static_cast<Device^>(_availableDevices->GetAt(0));
@@ -598,11 +706,39 @@ void VEELB::MainPage::sleepBtn_Click(Platform::Object^ sender, Windows::UI::Xaml
 	screenSaverAnimation();
 }
 
-
+// Settings flyout 
 void MainPage::settingsWebcamBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
 	WebcamSplitter->IsPaneOpen = !WebcamSplitter->IsPaneOpen;
 	//SerialProgressBar->Value = 50;
+}
+
+void VEELB::MainPage::redSlider_ValueChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::Primitives::RangeBaseValueChangedEventArgs^ e)
+{
+	redSldr = redSlider->Value;
+}
+
+void VEELB::MainPage::greenSlider_ValueChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::Primitives::RangeBaseValueChangedEventArgs^ e)
+{
+	greenSldr = greenSlider->Value;
+}
+
+void VEELB::MainPage::blueSlider_ValueChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::Primitives::RangeBaseValueChangedEventArgs^ e)
+{
+	blueSldr = blueSlider->Value;
+}
+
+void VEELB::MainPage::thicknessSlider_ValueChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::Primitives::RangeBaseValueChangedEventArgs^ e)
+{
+	thicknessSldr = thicknessSlider->Value;
+}
+
+void VEELB::MainPage::saveSettingsChanges_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
+{
+	Platform::String^ txt = redSldr.ToString() + " " + greenSldr.ToString() + " " + blueSldr.ToString() + " " + thicknessSldr.ToString();
+	if (WriteTextToFile(1, txt))
+	{
+	}
 }
 
 // Serial comms
@@ -725,14 +861,6 @@ Concurrency::task<void> MainPage::ConnectToSerialDeviceAsync(Windows::Devices::E
 /// <summary>
 /// Returns a task that sends the outgoing data from the sendText textbox to the output stream. 
 /// </summary
-//Concurrency::task<void> VEELB::MainPage::WriteAsync(Concurrency::cancellation_token cancellationToken, Platform::String^ messageToSend)
-//{
-//	_dataWriterObject->WriteString(messageToSend);
-//
-//	return concurrency::create_task(_dataWriterObject->StoreAsync(), cancellationToken).then([this](unsigned int bytesWritten)
-//	{
-//	});
-//}
 Concurrency::task<void> MainPage::WriteAsync(Concurrency::cancellation_token cancellationToken)
 {
 	_dataWriterObject->WriteString(jobIdNumTxtBlock->Text);
@@ -741,12 +869,11 @@ Concurrency::task<void> MainPage::WriteAsync(Concurrency::cancellation_token can
 	{
 		if (bytesWritten > 0)
 		{
-			Status->Text += "bytes written successfully!";
+			progBar->Value = 100;
 		}
 		jobIdNumTxtBlock->Text = "";
 	});
 }
-
 
 /// <summary>
 /// Returns a task that reads in the data from the input stream
@@ -833,20 +960,195 @@ Device::Device(Platform::String^ id, Windows::Devices::Enumeration::DeviceInform
 	_deviceInformation = deviceInfo;
 }
 
-
-void VEELB::MainPage::redSlider_ValueChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::Primitives::RangeBaseValueChangedEventArgs^ e)
+//File Access
+void MainPage::CreateFile(int fileType)
 {
-	redSldr = redSlider->Value;
+	//null pointer allows for access to the current user
+	//Platform::String^ tempFile = fileName;
+
+	switch (fileType)
+	{
+		case 1:
+			concurrency::create_task(KnownFolders::GetFolderForUserAsync(nullptr, KnownFolderId::DocumentsLibrary))
+				.then([this](StorageFolder^ documentsFolder)
+			{
+				Platform::String^ fileName = "configFile.txt";
+				return documentsFolder->CreateFileAsync(fileName, CreationCollisionOption::OpenIfExists);
+			}).then([this](concurrency::task<StorageFile^> task)
+			{
+				try
+				{
+					ConfigFile = task.get();
+					// success
+				}
+				catch (Platform::Exception^ e)
+				{
+					// I/O errors are reported as exceptions.
+					// TODO: notify error
+				}
+			});
+			break;
+		case 2:
+			concurrency::create_task(KnownFolders::GetFolderForUserAsync(nullptr, KnownFolderId::DocumentsLibrary))
+				.then([this](StorageFolder^ documentsFolder)
+			{
+				Platform::String^ fileName = "Log.txt";
+				return documentsFolder->CreateFileAsync(fileName, CreationCollisionOption::OpenIfExists);
+			}).then([this](concurrency::task<StorageFile^> task)
+			{
+				try
+				{
+					LogFile = task.get();
+					// success
+				}
+				catch (Platform::Exception^ e)
+				{
+					// I/O errors are reported as exceptions.
+					// TODO: notify error
+				}
+			});
+			break;
+	}
+}
+
+bool MainPage::WriteTextToFile(int fileType, Platform::String^ inputText)
+{
+	if (fileType == 1)
+	{
+		StorageFile^ tempFile = ConfigFile;
+		if (tempFile != nullptr)
+		{
+			Platform::String^ userContent = inputText;
+			if (userContent != nullptr && !userContent->IsEmpty())
+			{
+				concurrency::create_task(FileIO::WriteTextAsync(tempFile, userContent)).then([this, tempFile, userContent](concurrency::task<void> task)
+				{
+					try
+					{
+						task.get();
+						return true;
+					}
+					catch (COMException^ ex)
+					{
+						// TODO: notify error
+						return false;
+					}
+				});
+			}
+			else
+			{
+				return false;
+			}
+		}
+		else
+		{
+			//// TODO: notify file does not exist error
+			return false;
+		}
+	}
+	else if (fileType == 2)
+	{
+		StorageFile^ tempFile1 = LogFile;
+		if (tempFile1 != nullptr)
+		{
+			Platform::String^ userContent = inputText;
+			if (userContent != nullptr && !userContent->IsEmpty())
+			{
+				concurrency::create_task(FileIO::WriteTextAsync(tempFile1, userContent)).then([this, tempFile1, userContent](concurrency::task<void> task)
+				{
+					try
+					{
+						task.get();
+						return true;
+					}
+					catch (COMException^ ex)
+					{
+						// TODO: notify error
+						return false;
+					}
+				});
+			}
+			else
+			{
+				return false;
+			}
+		}
+		else
+		{
+			//// TODO: notify file does not exist error
+			return false;
+		}
+	}
+	else
+	{
+		return false;
+	}
+}
+
+void MainPage::ReadTextFromFile(int fileType)
+{
+	if (fileType == 1)
+	{
+		StorageFile^ tempFile = ConfigFile;
+		if (tempFile != nullptr)
+		{
+			concurrency::create_task(FileIO::ReadTextAsync(tempFile)).then([this, tempFile](concurrency::task<Platform::String^> task)
+			{
+				try
+				{
+					Platform::String^ fileContent = task.get();
+					Status->Text = fileContent;
+					//return fileContent;
+				}
+				catch (COMException^ ex)
+				{
+					// TODO: notify error
+					Platform::String^ fileError = "Error";
+					//return fileError;
+				}
+			});
+		}
+		else
+		{
+			// TODO: notify file does not exist error
+			//return "Error";
+		}
+	}
+	else if (fileType == 2)
+	{
+		StorageFile^ tempFile = LogFile;
+		if (tempFile != nullptr)
+		{
+			concurrency::create_task(FileIO::ReadTextAsync(tempFile)).then([this, tempFile](concurrency::task<Platform::String^> task)
+			{
+				try
+				{
+					Platform::String^ fileContent = task.get();
+					Status->Text = fileContent;
+					//return fileContent;
+				}
+				catch (COMException^ ex)
+				{
+					// TODO: notify error
+					Platform::String^ fileError = "Error";
+					//return fileError;
+				}
+			});
+		}
+		else
+		{
+			// TODO: notify file does not exist error
+			//return "Error";
+		}
+	}
+	else
+	{
+
+	}
 }
 
 
-void VEELB::MainPage::greenSlider_ValueChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::Primitives::RangeBaseValueChangedEventArgs^ e)
+void VEELB::MainPage::settingsBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
-	greenSldr = greenSlider->Value;
-}
 
-
-void VEELB::MainPage::blueSlider_ValueChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::Primitives::RangeBaseValueChangedEventArgs^ e)
-{
-	blueSldr = blueSlider->Value;
 }
