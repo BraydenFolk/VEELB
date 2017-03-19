@@ -8,7 +8,8 @@
     mc:Ignorable="d" Loaded="Page_Loaded" Width="762.516">
 
     <Grid Background="Black" Margin="0,0,0,0">
-        <Grid x:Name="SplashScreenGrid" Visibility="Visible" Background="#FF212121">
+        <TextBlock x:Name="configTextBlk" Visibility="Collapsed"/>
+        <Grid x:Name="SplashScreenGrid" Visibility="Collapsed" Background="#FF212121">
             <Grid.RowDefinitions>
                 <RowDefinition Height="75"/>
                 <RowDefinition Height="100"/>
@@ -138,7 +139,7 @@
             </Grid>
 
         </Grid>
-        <Grid x:Name="WebcamFeedGrid" Visibility="Collapsed" Background="#FF212121">
+        <Grid x:Name="WebcamFeedGrid" Visibility="Visible" Background="#FF212121">
             <!--<Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
             DisplayMode="Inline"
@@ -154,8 +155,8 @@
                         <TextBlock Text="Blue" Margin="10,176,252,231" FontSize="20"/>
                         <Slider x:Name="blueSlider" Margin="73,173,10,218" ValueChanged="blueSlider_ValueChanged" Maximum="255"/>
                         <TextBlock Text="Crosshair Thickness" Margin="10,219,10,188" FontSize="20"/>
-                        <Slider x:Name="thicknessSlider" Margin="10,242,10,149" ValueChanged="thicknessSlider_ValueChanged"/>
-                        <Button x:Name="saveSettingsChanges" Background="#FF2C5B9B" Margin="0,0,10,10" Height="36" FontSize="18" Content="Save" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="109" Click="saveSettingsChanges_Click"  />
+                        <Slider x:Name="thicknessSlider" Margin="10,242,10,149" ValueChanged="thicknessSlider_ValueChanged" Maximum="8"/>
+                        <Button x:Name="saveSettingsChanges" Background="#FF2C5B9B" Margin="0,0,10,108" Height="36" FontSize="18" Content="Save" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="109" Click="saveSettingsChanges_Click"  />
                     </Grid>
                 </SplitView.Pane>
                 <Image x:Name="imgCV" Canvas.ZIndex="2" Visibility="Visible" Source="glasses.png" />

@@ -100,12 +100,15 @@ namespace VEELB
 
 		void ListAvailablePorts(void);
 		bool IsTracer(Platform::String^ id);
+		vector<int> SeparateIntoDigits(unsigned int value);
+		int CreateChecksum(vector<int> digits);
 		void CancelReadTask(void);
 		void CloseDevice(void);
 		void Listen();
 
 		/*Concurrency::task<void> WriteAsync(Concurrency::cancellation_token cancellationToken, Platform::String^ message);*/
-		Concurrency::task<void> MainPage::WriteAsync(Concurrency::cancellation_token cancellationToken);
+		//Concurrency::task<void> MainPage::WriteAsync(Concurrency::cancellation_token cancellationToken);
+		Concurrency::task<void> MainPage::WriteAsync(Concurrency::cancellation_token cancellationToken, int jobNum);
 		Concurrency::task<void> ReadAsync(Concurrency::cancellation_token cancellationToken);
 		Concurrency::task<void> ConnectToSerialDeviceAsync(Windows::Devices::Enumeration::DeviceInformation ^device, Concurrency::cancellation_token cancellationToken);
 	private:

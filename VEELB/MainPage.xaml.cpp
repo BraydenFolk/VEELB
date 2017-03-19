@@ -74,6 +74,7 @@ int thicknessSldr = 0;
 JobViewModel^ job;
 FileAccess^ consoleFile;
 FileAccess^ configFile;
+Platform::String^ configContents = "";
 //SerialCommsViewModel^ serial;
 //SerialCommsViewModel^ job;
 bool onExit = false;
@@ -86,7 +87,7 @@ MainPage::MainPage()
 	Status->Text = "Initializing...";
 	progBar->Value = 10;
 	/*Windows::ApplicationModel::Email::EmailMessage^ temp = ref new Windows::ApplicationModel::Email::EmailMessage();
-	
+
 	StorageFile^ attachmentFile;
 	Windows::Storage::Streams::RandomAccessStreamReference^ stream = Windows::Storage::Streams::RandomAccessStreamReference::CreateFromFile(attachmentFile);*/
 	_availableDevices = ref new Platform::Collections::Vector<Platform::Object^>();
@@ -95,6 +96,7 @@ MainPage::MainPage()
 	CreateFile(1);
 	CreateFile(2);
 	progBar->Value = 100;
+	ReadTextFromFile(1);
 }
 
 // Webcam functions
@@ -168,67 +170,8 @@ void Compare(Mat frame, Mat oldFrame, Mat grayScale)
 	double red = (double)redSldr;
 	double thickness = (double)thicknessSldr;	
 
-	try
-	{
-		// starts top-left
-		for (int i = 0; i < frame.rows; i++)
-		{
-			for (int j = 0; j < frame.cols; j++)
-			{
-				Vec3b colour = frame.at<Vec3b>(i, j);
-				bool edge = true;
 
-				if (colour.val[0] < 60 && colour.val[1] < 60 && colour.val[2] < 60)
-				{
-					frame.at<Vec3b>(i, j)[0] = 255;
-					frame.at<Vec3b>(i, j)[1] = 0;
-					frame.at<Vec3b>(i, j)[2] = 0;
-
-					if (first == 0)
-					{
-						/*topX = i;
-						topY = j;*/
-						topX = i;
-						leftY = j;
-
-						int clusterCtr = 0;
-						for (int p = 0; p < 7; p++)
-						{
-							Vec3b clusterColour = frame.at<Vec3b>(i, j+p);
-
-							if (clusterColour.val[0] < 60 && clusterColour.val[1] < 60 && clusterColour.val[2] < 60)
-							{
-								clusterCtr++;
-								if (clusterCtr > 15)
-								{
-									break;
-								}
-							}
-						}
-
-						if (clusterCtr > 5)
-						{
-							first = 1;
-
-						}
-					}
-
-
-
-					/*bottomX = i;
-					bottomY = j;*/
-					bottomX = i;
-					rightY = j;
-				}
-			}
-		}
-	}
-	catch (Platform::Exception^ e)
-	{
-		Platform::String^ temp = e->Message;
-	}
-
-	int compareCtr = 0;
+	/*int compareCtr = 0;
 	if (oldFrame.rows == 0)
 		return;
 	for (int i = 0; i < frame.rows; i++)
@@ -242,135 +185,101 @@ void Compare(Mat frame, Mat oldFrame, Mat grayScale)
 				compareCtr++;
 			}
 		}
-	}
+	}*/
 
-	cv::line(frame, cv::Point(xPos, yPos - 10), cv::Point(xPos, yPos + 10), Scalar(red, green, blue), thickness);
-	cv::line(frame, cv::Point(xPos - 10, yPos), cv::Point(xPos + 10, yPos), Scalar(red, green, blue), thickness);
+	
 
-	if (compareCtr > 1000 || abs(leftY - rightY) < 50)
+	bool motion = false;
+
+	//if (compareCtr > 1000 /*|| abs(leftY - rightY) < 50*/)
+	//{
+	//	motion = true;
+	//}
+
+	if (!motion)
 	{
-		return;
+		try
+		{
+			// starts top-left
+			for (int i = 0; i < frame.rows; i++)
+			{
+				for (int j = 0; j < frame.cols; j++)
+				{
+					Vec3b colour = frame.at<Vec3b>(i, j);
+					bool edge = true;
+
+					if (colour.val[0] < 70 && colour.val[1] < 70 && colour.val[2] < 70)
+					{
+						frame.at<Vec3b>(i, j)[0] = 255;
+						frame.at<Vec3b>(i, j)[1] = 0;
+						frame.at<Vec3b>(i, j)[2] = 0;
+
+						if (first == 0)
+						{
+							/*topX = i;
+							topY = j;*/
+							topX = i;
+							leftY = j;
+
+							/*int clusterCtr = 0;
+							for (int p = 0; p < 7; p++)
+							{
+								Vec3b clusterColour = frame.at<Vec3b>(i, j + p);
+
+								if (clusterColour.val[0] < 60 && clusterColour.val[1] < 60 && clusterColour.val[2] < 60)
+								{
+									clusterCtr++;
+									if (clusterCtr > 15)
+									{
+										break;
+									}
+								}
+							}*/
+
+							/*if (clusterCtr > 5)
+							{*/
+								first = 1;
+
+							//}
+						}
+
+
+
+						/*bottomX = i;
+						bottomY = j;*/
+						bottomX = i;
+						rightY = j;
+					}
+				}
+			}
+		}
+		catch (Platform::Exception^ e)
+		{
+			Platform::String^ temp = e->Message;
+		}
+		// Template line
+		cv::line(frame, cv::Point(0, 0), cv::Point(frame.cols, 0), Scalar(red, green, blue), thickness);
+
+		int midX = (topX + bottomX) / 2;
+		int midY = (leftY + rightY) / 2;
+
+		cv::Point pt1(leftY, topX + 5);
+		cv::Point pt2(rightY, bottomX - 5);
+
+		cv::Point dv(0, 0); // get direction vector
+		dv.x = pt2.x - pt1.x;
+		dv.y = pt2.y - pt1.y;
+
+		cv::circle(frame, cv::Point(midY, midX), thickness, Scalar(150, 255, 0), 4, 8, 0);
+		cv::line(frame, cv::Point(midY, midX + 25), cv::Point(midY, midX - 25), Scalar(red, green, blue), thickness);
+		cv::line(frame, pt1, pt2, Scalar(red, green, blue), thickness);
 	}
 
-	// Template line
-	cv::line(frame, cv::Point(0, 0), cv::Point(frame.cols, 0), Scalar(red, green, blue), thickness); 
-
-	int midX = (topX + bottomX) / 2;
-	int midY = (leftY + rightY) / 2;
-
-	cv::circle(frame, cv::Point(midY, midX), thickness, Scalar(150, 255, 0), 4, 8, 0);
-	cv::line(frame, cv::Point(midY, midX + 25), cv::Point(midY, midX - 25), Scalar(red, green, blue), thickness);
-	cv::line(frame, cv::Point(leftY, topX+5), cv::Point(rightY, bottomX -5), Scalar(red, green, blue), thickness);	
+	cv::line(frame, cv::Point(xPos, yPos - 15), cv::Point(xPos, yPos + 15), Scalar(red, green, blue), thickness);
+	cv::line(frame, cv::Point(xPos - 15, yPos), cv::Point(xPos + 15, yPos), Scalar(red, green, blue), thickness);
 }
 
 // UI Functions
-void VEELB::MainPage::UpdateImage(const cv::Mat& image)
-{
-	// Create the WriteableBitmap
-	WriteableBitmap^ bitmap = ref new WriteableBitmap(image.cols, image.rows);
-
-	// Get access to the pixels
-	IBuffer^ buffer = bitmap->PixelBuffer;
-	unsigned char* dstPixels = nullptr;
-
-	// Obtain IBufferByteAccess
-	ComPtr<IBufferByteAccess> pBufferByteAccess;
-	ComPtr<IInspectable> pBuffer((IInspectable*)buffer);
-	pBuffer.As(&pBufferByteAccess);
-
-	// Get pointer to pixel bytes
-	HRESULT get_bytes = pBufferByteAccess->Buffer(&dstPixels);
-	if (get_bytes == S_OK) {
-		memcpy(dstPixels, image.data, image.step.buf[1] * image.cols*image.rows);
-
-		// Set the bitmap to the Image element
-		imgCV->Source = bitmap;
-		
-	}
-	else 
-	{
-		printf("Error loading image into buffer\n");
-	}
-}
-
-// TODO: Test
-void VEELB::MainPage::CameraFeed()
-{
-	Mat src, src_gray, canny_output;
-	int thresh = 100; // standard edge colour
-	int max_thresh = 255; // max
-	vector<vector<cv::Point> > contours;
-	vector<Vec4i> hierarchy;
-
-	VideoCapture cap;
-	//winrt_setFrameContainer(imgCV);
-	RNG rng(12345);
-
-	try
-	{
-		cap.open(0);
-		
-		if (!cap.isOpened())
-		{
-			vector<Vec4i> hierarchy1;
-		}
-		//cv::winrt_imshow();
-		Sleep(7000);
-		
-		//while (!cam.grab())
-		//{
-
-		//}
-		////Sleep(7000);
-
-		//while (cam.grab())
-		//{
-		//	try
-		//	{
-		//		cam >> src;
-		//	}
-		//	catch (Platform::Exception^ e)
-		//	{
-		//		Platform::String^ temp = e->Message;
-		//	}
-		//}
-
-		//cam >> src;
-		
-		while (1)
-		{
-			//if (!cam.grab()) continue;
-			//cam >> src;
-
-			src = cap.retrieve(src);
-
-			if (src.rows == 0 || src.cols == 0)
-			{
-				continue;
-			}
-
-			cvtColor(src, src_gray, CV_BGR2GRAY); // convert to grayscale
-			blur(src_gray, src_gray, cv::Size(3, 3)); // blur converted mat
-
-			Canny(src_gray, canny_output, thresh, thresh * 2, 3); // apply canny filter to image
-			findContours(canny_output, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
-
-			Mat drawing = Mat::zeros(canny_output.size(), CV_8UC3);
-			for (int i = 0; i < contours.size(); i++)
-			{
-				Scalar color = Scalar(rng.uniform(0, 255), rng.uniform(0, 255), rng.uniform(0, 255));
-				drawContours(drawing, contours, i, color, 2, 8, hierarchy, 0, cv::Point());
-			}
-
-			UpdateImage(drawing);
-		}
-	}
-	catch (...)
-	{
-
-	}
-}
-
 void VEELB::MainPage::exitWebcamBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
 	onExit = true;
@@ -401,26 +310,36 @@ void VEELB::MainPage::initBtn_Click(Platform::Object^ sender, Windows::UI::Xaml:
 	Platform::String^ temp;
 	try
 	{
-		//Platform::String^ config = 
-		ReadTextFromFile(1);
-		Platform::String^ params = Status->Text;
+		Platform::String^ params = configTextBlk->Text;
+		std::wstring str = params->Data();
 
-		// parse params
-		//string paramRed =
-		//wstring tempw(params->Begin());
-		//string paramRed(tempw.begin(), tempw.end());
-		//int pos1 = paramRed.find(" "); 
-		//tempw.
-		////string paramGreen =
-		////string paramBlue =
+		int spacePos = str.find(' ');
+		std::wstring strLeft = str.substr(0, spacePos);
+		int tempLen = str.length() - spacePos;
+		str = str.substr(spacePos + 1, tempLen);
 
-		//wstring tempw(inputString->Begin());
-		//string jobIdStdString(tempw.begin(), tempw.end() - 1);
-		//return jobIdStdString;
-		//wstring_convert<std::codecvt_utf8<wchar_t>> converter;
-		//wstring intermediateForm = converter.from_bytes(inputString);
-		//Platform::String^ retval = ref new Platform::String(intermediateForm.c_str());
-		//return retval;
+		redSlider->Value = (double)(_wtol(strLeft.data()));
+
+		spacePos = str.find(' ');
+		strLeft = str.substr(0, spacePos);
+		tempLen = str.length() - spacePos;
+		str = str.substr(spacePos + 1, tempLen);
+
+		greenSlider->Value = (double)(_wtol(strLeft.data()));
+
+		spacePos = str.find(' ');
+		strLeft = str.substr(0, spacePos);
+		tempLen = str.length() - spacePos;
+		str = str.substr(spacePos + 1, tempLen);
+
+		blueSlider->Value = (double)(_wtol(strLeft.data()));
+
+		spacePos = str.find(' ');
+		strLeft = str.substr(0, spacePos);
+		tempLen = str.length() - spacePos;
+		str = str.substr(spacePos + 1, tempLen);
+
+		thicknessSlider->Value = (double)(_wtol(strLeft.data()));
 	}
 	catch (Platform::Exception^ e)
 	{
@@ -633,7 +552,8 @@ void MainPage::returnBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::Rout
 			{
 				Status->Text = "Writing job number...";
 				progBar->Value = 10;
-				WriteAsync(cancellationTokenSource->get_token());
+				/*WriteAsync(cancellationTokenSource->get_token());*/
+				WriteAsync(cancellationTokenSource->get_token(), jobNumInt);
 			}
 			else
 			{
@@ -684,6 +604,8 @@ void VEELB::MainPage::startBtn_Click(Platform::Object^ sender, Windows::UI::Xaml
 	MainGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;
 
 	ProgressGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;
+
+	ReadTextFromFile(1);
 }
 
 
@@ -861,23 +783,81 @@ Concurrency::task<void> MainPage::ConnectToSerialDeviceAsync(Windows::Devices::E
 /// <summary>
 /// Returns a task that sends the outgoing data from the sendText textbox to the output stream. 
 /// </summary
-Concurrency::task<void> MainPage::WriteAsync(Concurrency::cancellation_token cancellationToken)
+//Concurrency::task<void> MainPage::WriteAsync(Concurrency::cancellation_token cancellationToken)
+//{
+//	_dataWriterObject->WriteString(jobIdNumTxtBlock->Text);
+//
+//	return concurrency::create_task(_dataWriterObject->StoreAsync(), cancellationToken).then([this](unsigned int bytesWritten)
+//	{
+//		if (bytesWritten > 0)
+//		{
+//			progBar->Value = 100;
+//		}
+//		jobIdNumTxtBlock->Text = "";
+//	});
+//}
+
+Concurrency::task<void> MainPage::WriteAsync(Concurrency::cancellation_token cancellationToken, int jobNum)
 {
-	_dataWriterObject->WriteString(jobIdNumTxtBlock->Text);
+	_dataWriterObject->WriteByte(0x88);
+	vector<int> digits = SeparateIntoDigits(jobNum);
+	for (int i = 0; i < 6; i++)
+	{
+		_dataWriterObject->WriteByte(digits.at(i));
+	}
+	_dataWriterObject->WriteByte(CreateChecksum(digits));
 
 	return concurrency::create_task(_dataWriterObject->StoreAsync(), cancellationToken).then([this](unsigned int bytesWritten)
 	{
-		if (bytesWritten > 0)
-		{
-			progBar->Value = 100;
-		}
-		jobIdNumTxtBlock->Text = "";
 	});
+}
+
+vector<int> MainPage::SeparateIntoDigits(unsigned int value)
+{
+	vector<int> digits;
+	do
+	{
+		digits.push_back(value % 10);
+	} while (value /= 10);
+	reverse(digits.begin(), digits.end());
+	return digits;
+}
+
+int MainPage::CreateChecksum(vector<int> digits)
+{
+	int sum = 0;
+	for (int i = 0; i < 6; i++)
+	{
+		sum += digits.at(i);
+	}
+	return sum;
 }
 
 /// <summary>
 /// Returns a task that reads in the data from the input stream
 /// </summary
+//Concurrency::task<void> VEELB::MainPage::ReadAsync(Concurrency::cancellation_token cancellationToken)
+//{
+//	unsigned int _readBufferLength = 2048;
+//
+//	return concurrency::create_task(_dataReaderObject->LoadAsync(_readBufferLength), cancellationToken).then([this](unsigned int bytesRead)
+//	{
+//		/*
+//		Dynamically generate repeating tasks via "recursive" task creation - "recursively" call Listen() at the end of the continuation chain.
+//		The "recursive" call is not true recursion. It will not accumulate stack since every recursive is made in a new task.
+//		*/
+//		if (bytesRead > 0)
+//		{
+//			Status->Text = _dataReaderObject->ReadString(bytesRead);
+//		}
+//		// start listening again after done with this chunk of incoming data
+//		Listen();
+//		
+//	});
+//
+//	
+//}
+
 Concurrency::task<void> VEELB::MainPage::ReadAsync(Concurrency::cancellation_token cancellationToken)
 {
 	unsigned int _readBufferLength = 2048;
@@ -894,7 +874,10 @@ Concurrency::task<void> VEELB::MainPage::ReadAsync(Concurrency::cancellation_tok
 		}
 		// start listening again after done with this chunk of incoming data
 		Listen();
+
 	});
+
+
 }
 
 /// <summary>
@@ -1085,6 +1068,8 @@ bool MainPage::WriteTextToFile(int fileType, Platform::String^ inputText)
 	}
 }
 
+
+
 void MainPage::ReadTextFromFile(int fileType)
 {
 	if (fileType == 1)
@@ -1097,7 +1082,7 @@ void MainPage::ReadTextFromFile(int fileType)
 				try
 				{
 					Platform::String^ fileContent = task.get();
-					Status->Text = fileContent;
+					configTextBlk->Text = fileContent;
 					//return fileContent;
 				}
 				catch (COMException^ ex)
