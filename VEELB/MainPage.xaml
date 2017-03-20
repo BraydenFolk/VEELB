@@ -5,11 +5,14 @@
     xmlns:local="using:VEELB"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    mc:Ignorable="d" Loaded="Page_Loaded" Width="762.516">
+    mc:Ignorable="d" Width="762.516">
 
     <Grid Background="Black" Margin="0,0,0,0">
-        <TextBlock x:Name="configTextBlk" Visibility="Collapsed"/>
-        <Grid x:Name="SplashScreenGrid" Visibility="Collapsed" Background="#FF212121">
+        <Grid x:Name="PlaceHoldersGrid" Visibility="Collapsed">
+            <TextBlock x:Name="configTextBlk"/>
+            <TextBlock x:Name="locationTextBlk"/>
+        </Grid>
+        <Grid x:Name="SplashScreenGrid" Visibility="Visible" Background="#FF212121">
             <Grid.RowDefinitions>
                 <RowDefinition Height="75"/>
                 <RowDefinition Height="100"/>
@@ -73,13 +76,10 @@
                             <TextBlock/>
                         </DataTemplate>
                     </ListBox.ItemTemplate>
-                    <ListBoxItem>
-                        <TextBlock Text="test" Foreground="White" FontSize="20"/>
-                    </ListBoxItem>
                 </ListBox>
             </Grid>
         </Grid>
-        <Grid x:Name="JobNumberGrid" Visibility="Collapsed" Background="#FF212121">
+        <Grid x:Name="JobNumberGrid" Visibility="Visible" Background="#FF212121">
             <Grid.RowDefinitions>
                 <RowDefinition Height="50"/>
                 <RowDefinition Height="2"/>
@@ -139,12 +139,12 @@
             </Grid>
 
         </Grid>
-        <Grid x:Name="WebcamFeedGrid" Visibility="Visible" Background="#FF212121">
+        <Grid x:Name="WebcamFeedGrid" Visibility="Collapsed" Background="#FF212121">
             <!--<Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
             DisplayMode="Inline"
             </Grid.ColumnDefinitions>-->
-            <SplitView x:Name="WebcamSplitter" IsPaneOpen="False" DisplayMode="Overlay" Background="#19FFFFFF" Grid.Column="0">
+            <SplitView x:Name="WebcamSplitter" IsPaneOpen="False" DisplayMode="Overlay" Background="#19FFFFFF" Grid.Column="0" LostFocus="WebcamSplitter_LostFocus">
                 <SplitView.Pane >
                     <Grid Background="#FF212121">
                         <TextBlock Text="Crosshair Colour" Margin="10,84,10,323" FontSize="20"/>
@@ -156,7 +156,6 @@
                         <Slider x:Name="blueSlider" Margin="73,173,10,218" ValueChanged="blueSlider_ValueChanged" Maximum="255"/>
                         <TextBlock Text="Crosshair Thickness" Margin="10,219,10,188" FontSize="20"/>
                         <Slider x:Name="thicknessSlider" Margin="10,242,10,149" ValueChanged="thicknessSlider_ValueChanged" Maximum="8"/>
-                        <Button x:Name="saveSettingsChanges" Background="#FF2C5B9B" Margin="0,0,10,108" Height="36" FontSize="18" Content="Save" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="109" Click="saveSettingsChanges_Click"  />
                     </Grid>
                 </SplitView.Pane>
                 <Image x:Name="imgCV" Canvas.ZIndex="2" Visibility="Visible" Source="glasses.png" />

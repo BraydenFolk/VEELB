@@ -58,7 +58,7 @@ namespace VEELB
 		WriteableBitmap^ ImageSource = ref new WriteableBitmap(4, 5);
 	private: 
 		// Event handlers
-		void Page_Loaded(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+		void validate(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 		void initBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 		void enterJobNumberBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 		void oneBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
@@ -149,6 +149,7 @@ namespace VEELB
 		void thicknessSlider_ValueChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::Primitives::RangeBaseValueChangedEventArgs^ e);
 		void saveSettingsChanges_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 		void settingsBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+		void WebcamSplitter_LostFocus(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 };
 	public ref class Device sealed
 	{

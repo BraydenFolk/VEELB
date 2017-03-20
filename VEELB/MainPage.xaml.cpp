@@ -78,6 +78,8 @@ Platform::String^ configContents = "";
 //SerialCommsViewModel^ serial;
 //SerialCommsViewModel^ job;
 bool onExit = false;
+bool canSave = false;
+bool firstInit = true;
 auto itemCollection = ref new Platform::Collections::Vector<Object^>();
 
 MainPage::MainPage()
@@ -270,13 +272,20 @@ void Compare(Mat frame, Mat oldFrame, Mat grayScale)
 		dv.x = pt2.x - pt1.x;
 		dv.y = pt2.y - pt1.y;
 
-		cv::circle(frame, cv::Point(midY, midX), thickness, Scalar(150, 255, 0), 4, 8, 0);
+		if (abs(midY - xPos) < 5 && abs(midX - yPos) < 5)
+		{
+			red = 0;
+			green = 255;
+			blue = 0;
+		}
+
 		cv::line(frame, cv::Point(midY, midX + 25), cv::Point(midY, midX - 25), Scalar(red, green, blue), thickness);
 		cv::line(frame, pt1, pt2, Scalar(red, green, blue), thickness);
+		cv::circle(frame, cv::Point(midY, midX), thickness, Scalar(150, 255, 0), 4, 8, 0);
 	}
 
-	cv::line(frame, cv::Point(xPos, yPos - 15), cv::Point(xPos, yPos + 15), Scalar(red, green, blue), thickness);
-	cv::line(frame, cv::Point(xPos - 15, yPos), cv::Point(xPos + 15, yPos), Scalar(red, green, blue), thickness);
+	cv::line(frame, cv::Point(xPos, yPos - 25), cv::Point(xPos, yPos + 25), Scalar(255, 0, 0), thickness);
+	cv::line(frame, cv::Point(xPos - 25, yPos), cv::Point(xPos + 25, yPos), Scalar(255, 0, 0), thickness);
 }
 
 // UI Functions
@@ -286,60 +295,78 @@ void VEELB::MainPage::exitWebcamBtn_Click(Platform::Object^ sender, Windows::UI:
 
 	WebcamFeedGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
 	MainGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;
+
+	Platform::String^ txt = redSldr.ToString() + " " + greenSldr.ToString() + " " + blueSldr.ToString() + " " + thicknessSldr.ToString();
+
+	if (WriteTextToFile(1, txt))
+	{
+	}
 }
 
 // Event handlers
-// TODO: Remove
-void VEELB::MainPage::Page_Loaded(Object^ sender, RoutedEventArgs^ e)
-{
-}
-
 void VEELB::MainPage::initBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
-	/*if (sender->Equals("settingsBtn"))
-	{
-		WebcamSplitter->IsPaneOpen = true;
-	}
-	else
-	{
-		WebcamSplitter->IsPaneOpen = false;
-	}*/
-
-	Status->Text = "Loading config...";
-	progBar->Value = 50;
 	Platform::String^ temp;
 	try
 	{
-		Platform::String^ params = configTextBlk->Text;
-		std::wstring str = params->Data();
+		if (jobNumInt > 0 && locationTextBlk->Text != "")
+		{
+			Platform::String^ location = locationTextBlk->Text;
+			std::wstring str = location->Data();
 
-		int spacePos = str.find(' ');
-		std::wstring strLeft = str.substr(0, spacePos);
-		int tempLen = str.length() - spacePos;
-		str = str.substr(spacePos + 1, tempLen);
+			std::wstring x = str.substr(3, 3);
+			std::wstring y = str.substr(6, 3);
 
-		redSlider->Value = (double)(_wtol(strLeft.data()));
+			xPos = _wtol(x.data());
+			yPos = _wtol(y.data());
+		}
+		else
+		{
+			xPos = 0;
+			yPos = 0;
+		}
 
-		spacePos = str.find(' ');
-		strLeft = str.substr(0, spacePos);
-		tempLen = str.length() - spacePos;
-		str = str.substr(spacePos + 1, tempLen);
+		if (firstInit)
+		{
+			Status->Text = "Loading config...";
+			progBar->Value = 50;
 
-		greenSlider->Value = (double)(_wtol(strLeft.data()));
+			Platform::String^ params = configTextBlk->Text;
+			std::wstring str = params->Data();
 
-		spacePos = str.find(' ');
-		strLeft = str.substr(0, spacePos);
-		tempLen = str.length() - spacePos;
-		str = str.substr(spacePos + 1, tempLen);
+			int spacePos = str.find(' ');
+			std::wstring strLeft = str.substr(0, spacePos);
+			int tempLen = str.length() - spacePos;
+			str = str.substr(spacePos + 1, tempLen);
 
-		blueSlider->Value = (double)(_wtol(strLeft.data()));
+			redSlider->Value = (double)(_wtol(strLeft.data()));
+			progBar->Value += 10;
 
-		spacePos = str.find(' ');
-		strLeft = str.substr(0, spacePos);
-		tempLen = str.length() - spacePos;
-		str = str.substr(spacePos + 1, tempLen);
+			spacePos = str.find(' ');
+			strLeft = str.substr(0, spacePos);
+			tempLen = str.length() - spacePos;
+			str = str.substr(spacePos + 1, tempLen);
 
-		thicknessSlider->Value = (double)(_wtol(strLeft.data()));
+			greenSlider->Value = (double)(_wtol(strLeft.data()));
+			progBar->Value += 10;
+
+			spacePos = str.find(' ');
+			strLeft = str.substr(0, spacePos);
+			tempLen = str.length() - spacePos;
+			str = str.substr(spacePos + 1, tempLen);
+
+			blueSlider->Value = (double)(_wtol(strLeft.data()));
+			progBar->Value += 10;
+
+			spacePos = str.find(' ');
+			strLeft = str.substr(0, spacePos);
+			tempLen = str.length() - spacePos;
+			str = str.substr(spacePos + 1, tempLen);
+
+			thicknessSlider->Value = (double)(_wtol(strLeft.data()));
+			progBar->Value += 10;
+			firstInit = false;
+		}
 	}
 	catch (Platform::Exception^ e)
 	{
@@ -402,21 +429,30 @@ void VEELB::MainPage::screenSaverAnimation()
 	}
 }
 
-// TODO: finish
 void VEELB::MainPage::enterJobNumberBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
 	MainGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
 	JobNumberGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;
 }
 
+void VEELB::MainPage::validate(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
+{
+	if (jobIdNumTxtBlock->Text->Length() == 6)
+	{
+		backspaceBtn_Click(sender, e);
+	}
+}
+
 void VEELB::MainPage::oneBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
+	validate(sender, e);
 	jobIdNumTxtBlock->Text += "1";
 	jobNumString = jobIdNumTxtBlock->Text;
 }
 
 void VEELB::MainPage::twoBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
+	validate(sender, e);
 	jobIdNumTxtBlock->Text += "2";
 	jobNumString = jobIdNumTxtBlock->Text;
 }
@@ -424,6 +460,7 @@ void VEELB::MainPage::twoBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::
 
 void VEELB::MainPage::threeBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
+	validate(sender, e);
 	jobIdNumTxtBlock->Text += "3";
 	jobNumString = jobIdNumTxtBlock->Text;
 }
@@ -431,6 +468,7 @@ void VEELB::MainPage::threeBtn_Click(Platform::Object^ sender, Windows::UI::Xaml
 
 void VEELB::MainPage::fourBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
+	validate(sender, e);
 	jobIdNumTxtBlock->Text += "4";
 	jobNumString = jobIdNumTxtBlock->Text;
 }
@@ -438,6 +476,7 @@ void VEELB::MainPage::fourBtn_Click(Platform::Object^ sender, Windows::UI::Xaml:
 
 void VEELB::MainPage::fiveBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
+	validate(sender, e);
 	jobIdNumTxtBlock->Text += "5";
 	jobNumString = jobIdNumTxtBlock->Text;
 }
@@ -445,6 +484,7 @@ void VEELB::MainPage::fiveBtn_Click(Platform::Object^ sender, Windows::UI::Xaml:
 
 void VEELB::MainPage::sixBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
+	validate(sender, e);
 	jobIdNumTxtBlock->Text += "6";
 	jobNumString = jobIdNumTxtBlock->Text;
 }
@@ -452,6 +492,7 @@ void VEELB::MainPage::sixBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::
 
 void VEELB::MainPage::sevenBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
+	validate(sender, e);
 	jobIdNumTxtBlock->Text += "7";
 	jobNumString = jobIdNumTxtBlock->Text;
 }
@@ -459,6 +500,7 @@ void VEELB::MainPage::sevenBtn_Click(Platform::Object^ sender, Windows::UI::Xaml
 
 void VEELB::MainPage::eightBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
+	validate(sender, e);
 	jobIdNumTxtBlock->Text += "8";
 	jobNumString = jobIdNumTxtBlock->Text;
 }
@@ -466,6 +508,7 @@ void VEELB::MainPage::eightBtn_Click(Platform::Object^ sender, Windows::UI::Xaml
 
 void VEELB::MainPage::nineBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
+	validate(sender, e);
 	jobIdNumTxtBlock->Text += "9";
 	jobNumString = jobIdNumTxtBlock->Text;
 }
@@ -473,6 +516,7 @@ void VEELB::MainPage::nineBtn_Click(Platform::Object^ sender, Windows::UI::Xaml:
 
 void VEELB::MainPage::zeroBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
+	validate(sender, e);
 	jobIdNumTxtBlock->Text += "0";
 	jobNumString = jobIdNumTxtBlock->Text;
 }
@@ -516,7 +560,13 @@ void VEELB::MainPage::clearBtn_Click(Platform::Object^ sender, Windows::UI::Xaml
 
 void MainPage::returnBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
-	// TODO: validate string ?
+	if (jobIdNumTxtBlock->Text->Length() != 6)
+	{
+		//jobIdNumTxtBlock->Foreground = std::Scalar(255, 0, 0);
+		// TODO: change foregroud colour, notify user that it must be 6 digits, set error flag so that we can notify the number button clicks
+		return;
+	}
+
 	jobNumInt = _wtoi(jobNumString->Data());
 
 	job = ref new JobViewModel(jobNumInt);
@@ -529,19 +579,19 @@ void MainPage::returnBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::Rout
 	mainGridJobNumberTxtBlk->Text = "Job number for session: " + jobNumString;
 	
 	JobNumberGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
-	MainGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;	
+	MainGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;
 
-	//consoleFile->WriteTextToFile("Job number: " + jobNumString);
+	TextBlock^ txtBlock = ref new TextBlock();
+	ListBoxItem^ lbItem = ref new ListBoxItem();
 
-	////_serialPort = ref new Windows::Devices::SerialCommunication::SerialDevice::FromIdAsync(entry->Id);
+	Windows::Globalization::Calendar^ c = ref new Windows::Globalization::Calendar;
+	Platform::String^ dateTimeNow = c->Year.ToString() + "-" + c->Month + "-" + c->Day + " " + c->Hour + ":" + c->Minute + ":" + c->Second;
 
-	//TextBlock^ txtBlock = ref new TextBlock();
-	//ListBoxItem^ lbItem = ref new ListBoxItem();
-	//txtBlock->Text = consoleFile->ReadTextFromFile();
+	txtBlock->Text = dateTimeNow + "        Job: " + jobNumString;
 
-	//lbItem->Content = txtBlock;
-	//itemCollection->Append(lbItem);
-
+	lbItem->Content = txtBlock;
+	itemCollection->Append(lbItem);
+	ConsoleListBox->ItemsSource = itemCollection;
 	// TODO: implement necessary functions in console
 
 	if (_serialPort != nullptr)
@@ -632,7 +682,6 @@ void VEELB::MainPage::sleepBtn_Click(Platform::Object^ sender, Windows::UI::Xaml
 void MainPage::settingsWebcamBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
 	WebcamSplitter->IsPaneOpen = !WebcamSplitter->IsPaneOpen;
-	//SerialProgressBar->Value = 50;
 }
 
 void VEELB::MainPage::redSlider_ValueChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::Primitives::RangeBaseValueChangedEventArgs^ e)
@@ -655,14 +704,6 @@ void VEELB::MainPage::thicknessSlider_ValueChanged(Platform::Object^ sender, Win
 	thicknessSldr = thicknessSlider->Value;
 }
 
-void VEELB::MainPage::saveSettingsChanges_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
-{
-	Platform::String^ txt = redSldr.ToString() + " " + greenSldr.ToString() + " " + blueSldr.ToString() + " " + thicknessSldr.ToString();
-	if (WriteTextToFile(1, txt))
-	{
-	}
-}
-
 // Serial comms
 void MainPage::ConnectToTracer()
 {
@@ -680,7 +721,7 @@ void MainPage::sendJob(Platform::String^ jobNum)
 	_availableDevices = ref new Platform::Collections::Vector<Platform::Object^>();
 	ListAvailablePorts(); // This method makes it break
 
-	Device^ selectedDevice = static_cast<Device^>(_availableDevices->GetAt(1));
+	Device^ selectedDevice = static_cast<Device^>(_availableDevices->GetAt(0));
 	Windows::Devices::Enumeration::DeviceInformation ^entry = selectedDevice->DeviceInfo;
 
 	concurrency::create_task(ConnectToSerialDeviceAsync(entry, cancellationTokenSource->get_token()));
@@ -807,6 +848,9 @@ Concurrency::task<void> MainPage::WriteAsync(Concurrency::cancellation_token can
 	}
 	_dataWriterObject->WriteByte(CreateChecksum(digits));
 
+	Status->Text = "Job number sent!";
+	progBar->Value += 30;
+
 	return concurrency::create_task(_dataWriterObject->StoreAsync(), cancellationToken).then([this](unsigned int bytesWritten)
 	{
 	});
@@ -868,9 +912,14 @@ Concurrency::task<void> VEELB::MainPage::ReadAsync(Concurrency::cancellation_tok
 		Dynamically generate repeating tasks via "recursive" task creation - "recursively" call Listen() at the end of the continuation chain.
 		The "recursive" call is not true recursion. It will not accumulate stack since every recursive is made in a new task.
 		*/
+		Status->Text = "Waiting for location...";
+		progBar->Value += 10;
 		if (bytesRead > 0)
 		{
-			Status->Text = _dataReaderObject->ReadString(bytesRead);
+			locationTextBlk->Text = _dataReaderObject->ReadString(bytesRead);
+			// TODO: validate 
+			Status->Text = "Location obtained!";
+			progBar->Value = 100;
 		}
 		// start listening again after done with this chunk of incoming data
 		Listen();
@@ -1135,5 +1184,12 @@ void MainPage::ReadTextFromFile(int fileType)
 
 void VEELB::MainPage::settingsBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
+	initBtn_Click(sender, e);
+	WebcamSplitter->IsPaneOpen = true;
+}
 
+
+void VEELB::MainPage::WebcamSplitter_LostFocus(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
+{
+	
 }
