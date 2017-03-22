@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "Console.h"
+#include "JobViewModel.h"
 
 using namespace VEELB;
 
@@ -10,5 +11,20 @@ using namespace Windows::UI::Xaml;
 
 Console::Console()
 {
+}
 
+Console::Console(JobViewModel^ job1, Platform::String^ timeStamp1)
+{
+	job = job1;
+	timeStamp = timeStamp1;
+}
+
+Platform::String^ Console::getTimeStamp()
+{
+	return timeStamp;
+}
+
+JobViewModel^ Console::getJob()
+{
+	return job;
 }

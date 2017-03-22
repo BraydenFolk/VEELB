@@ -7,6 +7,7 @@
 
 #include "MainPage.g.h"
 #include "JobViewModel.h"
+#include "Console.h"
 #include <opencv2\core\core.hpp>
 using namespace VEELB;
 using namespace Platform;
@@ -39,8 +40,6 @@ namespace VEELB
 		MainPage();
 		// Serial comms
 		static Windows::Foundation::IAsyncOperation<Windows::Devices::Enumeration::DeviceInformationCollection ^> ^ListAvailableSerialDevicesAsync(void);
-		void sendJob(Platform::String^ jobNum);
-		void ConnectToTracer();
 		// For XAML binding purposes, use the IObservableVector interface containing Object^ objects. 
 		// This wraps the real implementation of _availableDevices which is implemented as a Vector.
 		// See "Data Binding Overview (XAML)" https://msdn.microsoft.com/en-us/library/windows/apps/xaml/hh758320.aspx
@@ -57,6 +56,9 @@ namespace VEELB
 		int jobNumInt;
 		WriteableBitmap^ ImageSource = ref new WriteableBitmap(4, 5);
 	private: 
+		//Console
+		Console consoleEntries[1000];
+		int consoleCtr;
 		// Event handlers
 		void validate(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 		void initBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
@@ -85,11 +87,10 @@ namespace VEELB
 		void greenSlider_ValueChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::Primitives::RangeBaseValueChangedEventArgs^ e);
 		void blueSlider_ValueChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::Primitives::RangeBaseValueChangedEventArgs^ e);
 		// UI Functions
-		void VEELB::MainPage::UpdateImage(const cv::Mat& image);
-		void VEELB::MainPage::CameraFeed();
-		void VEELB::MainPage::screenSaverAnimation();
-		string VEELB::MainPage::convertPlatformStringToStandardString(Platform::String^ inputString);
-		Platform::String^ VEELB::MainPage::convertStringToPlatformString(string inputString);
+		void CustomMessageDialog(Platform::String^ customMessage);
+		void  screenSaverAnimation();
+		string convertPlatformStringToStandardString(Platform::String^ inputString);
+		Platform::String^ convertStringToPlatformString(string inputString);
 	private:
 		// Serial comms
 		Platform::Collections::Vector<Platform::Object^>^ _availableDevices;
@@ -147,7 +148,6 @@ namespace VEELB
 		}
 	private:
 		void thicknessSlider_ValueChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::Primitives::RangeBaseValueChangedEventArgs^ e);
-		void saveSettingsChanges_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 		void settingsBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 		void WebcamSplitter_LostFocus(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 };

@@ -5,6 +5,7 @@
 
 #include "pch.h"
 #include "MainPage.xaml.h"
+#include "Console.h"
 #include <opencv2\imgproc\types_c.h>
 #include <opencv2\imgcodecs\imgcodecs.hpp>
 #include <opencv2\core\core.hpp>
@@ -22,9 +23,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <codecvt>
-#include "FileAccess.h";
-//#include <sqlite3.h>
-//#include <winsqlite/winsqlite3.h>
 
 using namespace VEELB;
 using namespace Platform;
@@ -38,6 +36,7 @@ using namespace Windows::UI::Xaml::Data;
 using namespace Windows::UI::Xaml::Input;
 using namespace Windows::UI::Xaml::Media;
 using namespace Windows::UI::Xaml::Navigation;
+using namespace Windows::UI::Popups;
 
 using namespace Windows::Storage;
 
@@ -50,20 +49,6 @@ using namespace std;
 
 void Compare(Mat frame, Mat oldFrame, Mat grayScale);
 
-
-//our sensitivity value to be used in the threshold() function
-const static int SENSITIVITY_VALUE = 20;
-//size of blur used to smooth the image to remove possible noise and
-//increase the size of the object we are trying to track. (Much like dilate and erode)
-const static int BLUR_SIZE = 10;
-//we'll have just one object to search for
-//and keep track of its position.
-int theObject[2] = { 0,0 };
-Platform::String^ exceptionHolderText;
-//bounding rectangle of the object, we will use the center of this as its position.
-cv::Rect objectBoundingRectangle = cv::Rect(0, 0, 0, 0);
-int radius = 0;
-int detectType = 0;
 VideoCapture cam;
 int xPos = 235;
 int yPos = 235;
@@ -71,12 +56,11 @@ int redSldr = 0;
 int greenSldr = 0;
 int blueSldr = 0;
 int thicknessSldr = 0;
+
 JobViewModel^ job;
-FileAccess^ consoleFile;
-FileAccess^ configFile;
-Platform::String^ configContents = "";
-//SerialCommsViewModel^ serial;
-//SerialCommsViewModel^ job;
+//std::vector<Console> consoleEnt;
+
+
 bool onExit = false;
 bool canSave = false;
 bool firstInit = true;
@@ -88,10 +72,7 @@ MainPage::MainPage()
 
 	Status->Text = "Initializing...";
 	progBar->Value = 10;
-	/*Windows::ApplicationModel::Email::EmailMessage^ temp = ref new Windows::ApplicationModel::Email::EmailMessage();
 
-	StorageFile^ attachmentFile;
-	Windows::Storage::Streams::RandomAccessStreamReference^ stream = Windows::Storage::Streams::RandomAccessStreamReference::CreateFromFile(attachmentFile);*/
 	_availableDevices = ref new Platform::Collections::Vector<Platform::Object^>();
 	ListAvailablePorts();
 	progBar->Value = 50;
@@ -99,6 +80,9 @@ MainPage::MainPage()
 	CreateFile(2);
 	progBar->Value = 100;
 	ReadTextFromFile(1);
+	Status->Text = "Initialized!";
+
+	consoleCtr = 0;
 }
 
 // Webcam functions
@@ -117,8 +101,7 @@ void cvVideoTask()
 	yPos = job->getYPosition;*/
 
 	cam.open(0);
-	
-	//cv::winrt_imshow();
+
 	while (1)
 	{
 		// get a new frame from camera - this is non-blocking per spec
@@ -172,8 +155,12 @@ void Compare(Mat frame, Mat oldFrame, Mat grayScale)
 	double red = (double)redSldr;
 	double thickness = (double)thicknessSldr;	
 
+	int redLocked = 255;
+	int greenLocked = 0;
+	int blueLocked = 0;
 
-	/*int compareCtr = 0;
+
+	int compareCtr = 0;
 	if (oldFrame.rows == 0)
 		return;
 	for (int i = 0; i < frame.rows; i++)
@@ -187,16 +174,14 @@ void Compare(Mat frame, Mat oldFrame, Mat grayScale)
 				compareCtr++;
 			}
 		}
-	}*/
-
-	
+	}
 
 	bool motion = false;
 
-	//if (compareCtr > 1000 /*|| abs(leftY - rightY) < 50*/)
-	//{
-	//	motion = true;
-	//}
+	if (compareCtr > 1000 /*|| abs(leftY - rightY) < 50*/)
+	{
+		motion = true;
+	}
 
 	if (!motion)
 	{
@@ -272,20 +257,20 @@ void Compare(Mat frame, Mat oldFrame, Mat grayScale)
 		dv.x = pt2.x - pt1.x;
 		dv.y = pt2.y - pt1.y;
 
-		if (abs(midY - xPos) < 5 && abs(midX - yPos) < 5)
-		{
-			red = 0;
-			green = 255;
-			blue = 0;
-		}
-
 		cv::line(frame, cv::Point(midY, midX + 25), cv::Point(midY, midX - 25), Scalar(red, green, blue), thickness);
 		cv::line(frame, pt1, pt2, Scalar(red, green, blue), thickness);
 		cv::circle(frame, cv::Point(midY, midX), thickness, Scalar(150, 255, 0), 4, 8, 0);
+
+		if (abs(midY - xPos) < 5 && abs(midX - yPos) < 5)
+		{
+			redLocked = 0;
+			greenLocked = 255;
+			blueLocked = 0;
+		}
 	}
 
-	cv::line(frame, cv::Point(xPos, yPos - 25), cv::Point(xPos, yPos + 25), Scalar(255, 0, 0), thickness);
-	cv::line(frame, cv::Point(xPos - 25, yPos), cv::Point(xPos + 25, yPos), Scalar(255, 0, 0), thickness);
+	cv::line(frame, cv::Point(xPos, yPos - 25), cv::Point(xPos, yPos + 25), Scalar(redLocked, greenLocked, blueLocked), thickness);
+	cv::line(frame, cv::Point(xPos - 25, yPos), cv::Point(xPos + 25, yPos), Scalar(redLocked, greenLocked, blueLocked), thickness);
 }
 
 // UI Functions
@@ -300,7 +285,28 @@ void VEELB::MainPage::exitWebcamBtn_Click(Platform::Object^ sender, Windows::UI:
 
 	if (WriteTextToFile(1, txt))
 	{
+		// success
 	}
+}
+
+void VEELB::MainPage::CustomMessageDialog(Platform::String^ customMessage)
+{
+	// Create the message dialog and set its content and title
+	auto messageDialog = ref new MessageDialog(customMessage, "Initialization not complete");
+
+	// Add commands and set their callbacks
+	messageDialog->Commands->Append(ref new UICommand("Continue", ref new UICommandInvokedHandler([this](IUICommand^ command)
+	{
+	})));
+	messageDialog->Commands->Append(ref new UICommand("Exit", ref new UICommandInvokedHandler([this](IUICommand^ command)
+	{
+	})));
+
+	// Set the command that will be invoked by default
+	//messageDialog->DefaultCommandIndex = 1;
+
+	// Show the message dialog
+	messageDialog->ShowAsync();
 }
 
 // Event handlers
@@ -309,7 +315,13 @@ void VEELB::MainPage::initBtn_Click(Platform::Object^ sender, Windows::UI::Xaml:
 	Platform::String^ temp;
 	try
 	{
-		if (jobNumInt > 0 && locationTextBlk->Text != "")
+		/*locationTextBlk->Text == "";
+		if (locationTextBlk->Text == "")
+		{
+			CustomMessageDialog("Location has not yet been recieved, continue?");
+			return;
+		}*/
+		if (jobNumInt > 0)
 		{
 			Platform::String^ location = locationTextBlk->Text;
 			std::wstring str = location->Data();
@@ -382,7 +394,6 @@ void VEELB::MainPage::initBtn_Click(Platform::Object^ sender, Windows::UI::Xaml:
 	winrt_startMessageLoop(cvVideoTask);
 
 	onExit = false;
-	//CameraFeed();
 }
 
 void VEELB::MainPage::screenSaverAnimation()
@@ -550,13 +561,11 @@ Platform::String^ VEELB::MainPage::convertStringToPlatformString(string inputStr
 	return retval;
 }
 
-
 void VEELB::MainPage::clearBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
 	jobIdNumTxtBlock->Text = "";
 	jobNumString = jobIdNumTxtBlock->Text;
 }
-
 
 void MainPage::returnBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
@@ -571,9 +580,7 @@ void MainPage::returnBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::Rout
 
 	job = ref new JobViewModel(jobNumInt);
 
-	xPos = job->getXPosition();
-
-	//ConnectToTracer();
+	//xPos = job->getXPosition();
 
 	// TODO: save last returned number
 	mainGridJobNumberTxtBlk->Text = "Job number for session: " + jobNumString;
@@ -592,6 +599,11 @@ void MainPage::returnBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::Rout
 	lbItem->Content = txtBlock;
 	itemCollection->Append(lbItem);
 	ConsoleListBox->ItemsSource = itemCollection;
+
+	//int ctr = currentConsole->getJobCtr();
+	//consoleEntries
+
+
 	// TODO: implement necessary functions in console
 
 	if (_serialPort != nullptr)
@@ -602,7 +614,6 @@ void MainPage::returnBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::Rout
 			{
 				Status->Text = "Writing job number...";
 				progBar->Value = 10;
-				/*WriteAsync(cancellationTokenSource->get_token());*/
 				WriteAsync(cancellationTokenSource->get_token(), jobNumInt);
 			}
 			else
@@ -705,30 +716,6 @@ void VEELB::MainPage::thicknessSlider_ValueChanged(Platform::Object^ sender, Win
 }
 
 // Serial comms
-void MainPage::ConnectToTracer()
-{
-	/*_availableDevices = ref new Platform::Collections::Vector<Platform::Object^>();
-	ListAvailablePorts();*/
-
-	/*Device^ selectedDevice = static_cast<Device^>(_availableDevices->GetAt(1));
-	Windows::Devices::Enumeration::DeviceInformation ^entry = selectedDevice->DeviceInfo;
-
-	concurrency::create_task(ConnectToSerialDeviceAsync(entry, cancellationTokenSource->get_token()));*/
-}
-
-void MainPage::sendJob(Platform::String^ jobNum)
-{
-	_availableDevices = ref new Platform::Collections::Vector<Platform::Object^>();
-	ListAvailablePorts(); // This method makes it break
-
-	Device^ selectedDevice = static_cast<Device^>(_availableDevices->GetAt(0));
-	Windows::Devices::Enumeration::DeviceInformation ^entry = selectedDevice->DeviceInfo;
-
-	concurrency::create_task(ConnectToSerialDeviceAsync(entry, cancellationTokenSource->get_token()));
-
-	//WriteAsync(cancellationTokenSource->get_token(), jobNum);
-}
-
 /// <summary>
 /// Finds all serial devices available on the device and populates a list with the Ids of each device.
 /// </summary>
@@ -824,20 +811,6 @@ Concurrency::task<void> MainPage::ConnectToSerialDeviceAsync(Windows::Devices::E
 /// <summary>
 /// Returns a task that sends the outgoing data from the sendText textbox to the output stream. 
 /// </summary
-//Concurrency::task<void> MainPage::WriteAsync(Concurrency::cancellation_token cancellationToken)
-//{
-//	_dataWriterObject->WriteString(jobIdNumTxtBlock->Text);
-//
-//	return concurrency::create_task(_dataWriterObject->StoreAsync(), cancellationToken).then([this](unsigned int bytesWritten)
-//	{
-//		if (bytesWritten > 0)
-//		{
-//			progBar->Value = 100;
-//		}
-//		jobIdNumTxtBlock->Text = "";
-//	});
-//}
-
 Concurrency::task<void> MainPage::WriteAsync(Concurrency::cancellation_token cancellationToken, int jobNum)
 {
 	_dataWriterObject->WriteByte(0x88);
@@ -850,9 +823,14 @@ Concurrency::task<void> MainPage::WriteAsync(Concurrency::cancellation_token can
 
 	Status->Text = "Job number sent!";
 	progBar->Value += 30;
+	locationTextBlk->Text = "";
 
 	return concurrency::create_task(_dataWriterObject->StoreAsync(), cancellationToken).then([this](unsigned int bytesWritten)
 	{
+		if (bytesWritten > 0)
+		{
+
+		}
 	});
 }
 
@@ -880,28 +858,6 @@ int MainPage::CreateChecksum(vector<int> digits)
 /// <summary>
 /// Returns a task that reads in the data from the input stream
 /// </summary
-//Concurrency::task<void> VEELB::MainPage::ReadAsync(Concurrency::cancellation_token cancellationToken)
-//{
-//	unsigned int _readBufferLength = 2048;
-//
-//	return concurrency::create_task(_dataReaderObject->LoadAsync(_readBufferLength), cancellationToken).then([this](unsigned int bytesRead)
-//	{
-//		/*
-//		Dynamically generate repeating tasks via "recursive" task creation - "recursively" call Listen() at the end of the continuation chain.
-//		The "recursive" call is not true recursion. It will not accumulate stack since every recursive is made in a new task.
-//		*/
-//		if (bytesRead > 0)
-//		{
-//			Status->Text = _dataReaderObject->ReadString(bytesRead);
-//		}
-//		// start listening again after done with this chunk of incoming data
-//		Listen();
-//		
-//	});
-//
-//	
-//}
-
 Concurrency::task<void> VEELB::MainPage::ReadAsync(Concurrency::cancellation_token cancellationToken)
 {
 	unsigned int _readBufferLength = 2048;
@@ -916,7 +872,7 @@ Concurrency::task<void> VEELB::MainPage::ReadAsync(Concurrency::cancellation_tok
 		progBar->Value += 10;
 		if (bytesRead > 0)
 		{
-			locationTextBlk->Text = _dataReaderObject->ReadString(bytesRead);
+			locationTextBlk->Text += _dataReaderObject->ReadString(bytesRead);
 			// TODO: validate 
 			Status->Text = "Location obtained!";
 			progBar->Value = 100;
@@ -925,8 +881,6 @@ Concurrency::task<void> VEELB::MainPage::ReadAsync(Concurrency::cancellation_tok
 		Listen();
 
 	});
-
-
 }
 
 /// <summary>
@@ -1117,8 +1071,6 @@ bool MainPage::WriteTextToFile(int fileType, Platform::String^ inputText)
 	}
 }
 
-
-
 void MainPage::ReadTextFromFile(int fileType)
 {
 	if (fileType == 1)
@@ -1181,15 +1133,387 @@ void MainPage::ReadTextFromFile(int fileType)
 	}
 }
 
-
 void VEELB::MainPage::settingsBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
 	initBtn_Click(sender, e);
 	WebcamSplitter->IsPaneOpen = true;
 }
 
+// Serial sample code
 
-void VEELB::MainPage::WebcamSplitter_LostFocus(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
-{
-	
-}
+
+
+//#include "pch.h"
+//#include "MainPage.xaml.h"
+//
+//using namespace SerialSampleCpp;
+//
+//using namespace Platform;
+//using namespace Windows::Foundation;
+//using namespace Windows::Foundation::Collections;
+//using namespace Windows::UI::Xaml;
+//using namespace Windows::UI::Xaml::Controls;
+//using namespace Windows::UI::Xaml::Controls::Primitives;
+//using namespace Windows::UI::Xaml::Data;
+//using namespace Windows::UI::Xaml::Input;
+//using namespace Windows::UI::Xaml::Media;
+//using namespace Windows::UI::Xaml::Navigation;
+//
+//// The Blank Page item template is documented at http://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
+//
+//bool read = false;
+//
+//MainPage::MainPage()
+//{
+//	InitializeComponent();
+//
+//	comPortInput->IsEnabled = false;
+//	sendTextButton->IsEnabled = false;
+//	_availableDevices = ref new Platform::Collections::Vector<Platform::Object^>();
+//
+//	ListAvailablePorts();
+//}
+//
+///// <summary>
+///// Finds all serial devices available on the device and populates a ListBox with the Ids of each device.
+///// </summary>
+//void MainPage::ListAvailablePorts(void)
+//{
+//	cancellationTokenSource = new Concurrency::cancellation_token_source();
+//
+//	//using asynchronous operation, get a list of serial devices available on this device
+//	Concurrency::create_task(ListAvailableSerialDevicesAsync()).then([this](Windows::Devices::Enumeration::DeviceInformationCollection ^serialDeviceCollection)
+//	{
+//		Windows::Devices::Enumeration::DeviceInformationCollection ^_deviceCollection = serialDeviceCollection;
+//
+//		// start with an empty list
+//		_availableDevices->Clear();
+//
+//		status->Text = "Select a device and connect";
+//
+//		for (auto &&device : _deviceCollection)
+//		{
+//			_availableDevices->Append(ref new Device(device->Id, device));
+//		}
+//
+//		// this will populate the ListBox with our available device Ids.
+//		DeviceListSource->Source = AvailableDevices;
+//
+//		comPortInput->IsEnabled = true;
+//		ConnectDevices->SelectedIndex = -1;
+//	});
+//}
+//
+///// <summary>
+///// An asynchronous operation that returns a collection of DeviceInformation objects for all serial devices detected on the device.
+///// </summary>
+//Windows::Foundation::IAsyncOperation<Windows::Devices::Enumeration::DeviceInformationCollection ^> ^MainPage::ListAvailableSerialDevicesAsync(void)
+//{
+//	// Construct AQS String for all serial devices on system
+//	Platform::String ^serialDevices_aqs = Windows::Devices::SerialCommunication::SerialDevice::GetDeviceSelector();
+//
+//	// Identify all paired devices satisfying query
+//	return Windows::Devices::Enumeration::DeviceInformation::FindAllAsync(serialDevices_aqs);
+//}
+//
+///// <summary>
+///// Creates a task chain that attempts connect to a serial device asynchronously. 
+///// </summary
+//Concurrency::task<void> MainPage::ConnectToSerialDeviceAsync(Windows::Devices::Enumeration::DeviceInformation ^device, Concurrency::cancellation_token cancellationToken)
+//{
+//	return create_task(Windows::Devices::SerialCommunication::SerialDevice::FromIdAsync(device->Id), cancellationToken)
+//		.then([this](Windows::Devices::SerialCommunication::SerialDevice ^serial_device)
+//	{
+//		try
+//		{
+//			_serialPort = serial_device;
+//
+//			// Disable the 'Connect' button 
+//			comPortInput->IsEnabled = false;
+//			Windows::Foundation::TimeSpan _timeOut;
+//			_timeOut.Duration = 10000000L;
+//
+//			// Configure serial settings
+//			_serialPort->WriteTimeout = _timeOut;
+//			_serialPort->ReadTimeout = _timeOut;
+//			_serialPort->BaudRate = 9600;
+//			_serialPort->Parity = Windows::Devices::SerialCommunication::SerialParity::None;
+//			_serialPort->StopBits = Windows::Devices::SerialCommunication::SerialStopBitCount::One;
+//			_serialPort->DataBits = 8;
+//			_serialPort->Handshake = Windows::Devices::SerialCommunication::SerialHandshake::None;
+//
+//			// Display configured settings
+//			status->Text = "Serial port configured successfully: ";
+//			status->Text += _serialPort->BaudRate + "-";
+//			status->Text += _serialPort->DataBits + "-";
+//			status->Text += _serialPort->Parity.ToString() + "-";
+//			status->Text += _serialPort->StopBits.ToString();
+//
+//			// setup our data reader for handling incoming data
+//			_dataReaderObject = ref new Windows::Storage::Streams::DataReader(_serialPort->InputStream);
+//			_dataReaderObject->InputStreamOptions = Windows::Storage::Streams::InputStreamOptions::Partial;
+//
+//			// setup our data writer for handling outgoing data
+//			_dataWriterObject = ref new Windows::Storage::Streams::DataWriter(_serialPort->OutputStream);
+//
+//			// Setting this text will trigger the event handler that runs asynchronously for reading data from the input stream
+//			rcvdText->Text = "Waiting for data...";
+//
+//			sendTextButton->IsEnabled = true;
+//
+//			Listen();
+//		}
+//		catch (Platform::Exception ^ex)
+//		{
+//			status->Text = "Error connecting to device!\nsendTextButton_Click: " + ex->Message;
+//			// perform any cleanup needed
+//			CloseDevice();
+//		}
+//	});
+//}
+//
+///// <summary>
+///// Returns a task that sends the outgoing data from the sendText textbox to the output stream. 
+///// </summary
+//Concurrency::task<void> MainPage::WriteAsync(Concurrency::cancellation_token cancellationToken)
+//{
+//	//_dataWriterObject->WriteString(sendText->Text);
+//	srand(time(NULL));
+//
+//	/* generate secret number between 1 and 10: */
+//	int x = 0;
+//	int y = 0;
+//
+//	//_dataWriterObject->WriteString("000" + x.ToString() + y.ToString() + "000");
+//
+//	Platform::String^ rcvdString = rcvdText->Text;
+//
+//	std::wstring rcvd = rcvdString->Data();
+//
+//	//int spacePos = str.find(' ');
+//	rcvd = rcvd.substr(3, 6);
+//	int jobNum = _wtol(rcvd.data());
+//
+//	switch (jobNum)
+//	{
+//	case 111111:
+//		x = 100;
+//		y = 100;
+//		break;
+//	case 222222:
+//		x = 200;
+//		y = 200;
+//		break;
+//	case 333333:
+//		x = 150;
+//		y = 150;
+//		break;
+//	case 444444:
+//		x = 105;
+//		y = 200;
+//		break;
+//	case 555555:
+//		x = 0;
+//		y = 0;
+//		break;
+//	default:
+//		x = 200;
+//		y = 105;
+//		break;
+//	}
+//
+//	_dataWriterObject->WriteString("000");
+//	_dataWriterObject->WriteString(x.ToString());
+//	_dataWriterObject->WriteString(y.ToString());
+//	_dataWriterObject->WriteString("000");
+//
+//	return concurrency::create_task(_dataWriterObject->StoreAsync(), cancellationToken).then([this](unsigned int bytesWritten)
+//	{
+//		if (bytesWritten > 0)
+//		{
+//			status->Text = sendText->Text + ", ";
+//			status->Text += "bytes written successfully!";
+//		}
+//		sendText->Text = "";
+//	});
+//}
+//
+///// <summary>
+///// Returns a task that reads in the data from the input stream
+///// </summary
+//Concurrency::task<void> MainPage::ReadAsync(Concurrency::cancellation_token cancellationToken)
+//{
+//	unsigned int _readBufferLength = 1024;
+//
+//	return concurrency::create_task(_dataReaderObject->LoadAsync(_readBufferLength), cancellationToken).then([this](unsigned int bytesRead)
+//	{
+//		if (bytesRead > 0)
+//		{
+//			//rcvdText->Text = _dataReaderObject->ReadByte().ToString;
+//			//wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+//			rcvdText->Text = "";
+//			Platform::String^ retval;
+//			for (int i = 0; i < bytesRead; i++)
+//			{
+//				byte temp = _dataReaderObject->ReadByte();// .ToString;
+//														  //	string mystr = temp.ToString;
+//														  //wstring intermediateForm = converter.from_bytes(temp);
+//														  //retval = ref new Platform::String(intermediateForm.c_str());
+//				rcvdText->Text += temp;
+//
+//				read = true;
+//			}
+//
+//
+//
+//			status->Text = "bytes read successfully!";
+//		}
+//
+//
+//		/*
+//		Dynamically generate repeating tasks via "recursive" task creation - "recursively" call Listen() at the end of the continuation chain.
+//		The "recursive" call is not true recursion. It will not accumulate stack since every recursive is made in a new task.
+//		*/
+//
+//		// start listening again after done with this chunk of incoming data
+//		Listen();
+//	});
+//
+//}
+//
+///// <summary>
+///// Initiates task cancellation
+///// </summary
+//void MainPage::CancelReadTask(void)
+//{
+//	cancellationTokenSource->cancel();
+//}
+//
+///// <summary>
+///// Closes the comport currently connected
+///// </summary
+//void MainPage::CloseDevice(void)
+//{
+//	delete(_dataReaderObject);
+//	_dataReaderObject = nullptr;
+//
+//	delete(_dataWriterObject);
+//	_dataWriterObject = nullptr;
+//
+//	delete(_serialPort);
+//	_serialPort = nullptr;
+//
+//	comPortInput->IsEnabled = true;
+//	sendTextButton->IsEnabled = false;
+//	rcvdText->Text = "";
+//}
+//
+///// <summary>
+///// Event handler that is triggered when the user clicks on the "Connect" button. 
+////  Attempts to connect to the serial device that the user selected.
+///// </summary
+//void MainPage::comPortInput_Click(Object^ sender, RoutedEventArgs^ e)
+//{
+//	auto selectionIndex = ConnectDevices->SelectedIndex;
+//
+//	if (selectionIndex < 0)
+//	{
+//		status->Text = L"Select a device and connect";
+//		return;
+//	}
+//
+//	Device^ selectedDevice = static_cast<Device^>(_availableDevices->GetAt(selectionIndex));
+//	Windows::Devices::Enumeration::DeviceInformation ^entry = selectedDevice->DeviceInfo;
+//
+//	concurrency::create_task(ConnectToSerialDeviceAsync(entry, cancellationTokenSource->get_token()));
+//}
+//
+///// <summary>
+///// Event handler that is triggered when the user clicks the "WRITE" button.
+///// Sends the characters located in the sendText TextBox.
+///// </summary
+//void MainPage::sendTextButton_Click(Object^ sender, RoutedEventArgs^ e)
+//{
+//	if (_serialPort != nullptr)
+//	{
+//		try
+//		{
+//			if (sendText->Text->Length() > 0)
+//			{
+//				WriteAsync(cancellationTokenSource->get_token());
+//			}
+//			else
+//			{
+//				status->Text = "Enter the text you want to write and then click on 'WRITE'";
+//			}
+//		}
+//		catch (Platform::Exception ^ex)
+//		{
+//			status->Text = "sendTextButton_Click: " + ex->Message;
+//		}
+//	}
+//	else
+//	{
+//		status->Text = "Select a device and connect";
+//	}
+//}
+//
+///// <summary>
+///// Event handler that starts listening the serial port input
+///// </summary
+//void MainPage::Listen()
+//{
+//	try
+//	{
+//		if (_serialPort != nullptr)
+//		{
+//			// calling task.wait() is not allowed in Windows Runtime STA (Single Threaded Apartment) threads due to blocking the UI.
+//			concurrency::create_task(ReadAsync(cancellationTokenSource->get_token()));
+//
+//			if (read)
+//			{
+//				WriteAsync(cancellationTokenSource->get_token());
+//				read = false;
+//			}
+//		}
+//	}
+//	catch (Platform::Exception ^ex)
+//	{
+//		if (ex->GetType()->FullName == "TaskCanceledException")
+//		{
+//			status->Text = "Reading task was cancelled, closing device and cleaning up";
+//			CloseDevice();
+//		}
+//		else
+//		{
+//			status->Text = ex->Message;
+//		}
+//	}
+//}
+//
+///// <summary>
+///// Event handler closing the currently connected serial device
+///// </summary
+//void MainPage::closeDevice_Click(Object^ sender, RoutedEventArgs^ e)
+//{
+//	try
+//	{
+//		status->Text = "";
+//		CancelReadTask();
+//		CloseDevice();
+//		ListAvailablePorts();
+//	}
+//	catch (Platform::Exception ^ex)
+//	{
+//		status->Text = ex->Message;
+//	}
+//}
+//
+///// <summary>
+///// Constructor for the Device class
+///// </summary
+//Device::Device(Platform::String^ id, Windows::Devices::Enumeration::DeviceInformation^ deviceInfo)
+//{
+//	_id = id;
+//	_deviceInformation = deviceInfo;
+//}
