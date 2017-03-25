@@ -10,7 +10,6 @@
 using namespace Windows::Devices::Enumeration;
 using namespace std;
 
-
 namespace VEELB
 {
 	/// <summary>
@@ -19,7 +18,7 @@ namespace VEELB
 	public ref class Device sealed
 	{
 	public:
-		Device(Platform::String^ id, Windows::Devices::Enumeration::DeviceInformation^ deviceInfo);
+		Device(Platform::String^ id, DeviceInformation^ deviceInfo);
 
 		property Platform::String^ Id
 		{
@@ -28,9 +27,9 @@ namespace VEELB
 				return _id;
 			}
 		}
-		property Windows::Devices::Enumeration::DeviceInformation^ DeviceInfo
+		property DeviceInformation^ DeviceInfo
 		{
-			Windows::Devices::Enumeration::DeviceInformation^ get()
+			DeviceInformation^ get()
 			{
 				return _deviceInformation;
 			}
@@ -38,7 +37,7 @@ namespace VEELB
 
 	private:
 		Platform::String^ _id;
-		Windows::Devices::Enumeration::DeviceInformation^ _deviceInformation;
+		DeviceInformation^ _deviceInformation;
 	};
 
 }

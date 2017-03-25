@@ -1,6 +1,6 @@
 ﻿<!-- MainPage.xaml -->
 <!-- The UI of the entire program -->
- <!-- Authors: Petra Kujawa and Brayden Folk -->
+<!-- Authors: Brayden Folk and Petra Kujawa -->
     
 <Page
     x:Class="VEELB.MainPage"
@@ -9,9 +9,13 @@
     xmlns:local="using:VEELB"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    mc:Ignorable="d" Loaded="Page_Loaded" Width="762.516">
+    mc:Ignorable="d" Width="762.516">
 
     <Grid Background="Black" Margin="0,0,0,0">
+        <Grid x:Name="PlaceHoldersGrid" Visibility="Collapsed">
+            <TextBlock x:Name="configTextBlk"/>
+            <TextBlock x:Name="locationTextBlk"/>
+        </Grid>
         <Grid x:Name="SplashScreenGrid" Visibility="Visible" Background="#FF212121">
             <Grid.RowDefinitions>
                 <RowDefinition Height="75"/>
@@ -64,7 +68,7 @@
             <TextBlock x:Name="mainGridJobNumberTxtBlk" Grid.Row="2" Foreground="White" FontSize="20" Grid.ColumnSpan="3" Grid.Column="1" Margin="10,0"/>
             <Button x:Name="initBtn" Content="Initialize" HorizontalAlignment="Stretch" VerticalAlignment="Top" Click="initBtn_Click" Canvas.ZIndex="-2" Background="#FF2C5B9B" Grid.Row="6" Height="50" Foreground="White"  Grid.Column="1" FontSize="18"/>
             <Button x:Name="enterJobNumberBtn" Content="Enter Job Number" HorizontalAlignment="Stretch" VerticalAlignment="Top" Canvas.ZIndex="-2" Background="#FF2C5B9B" Click="enterJobNumberBtn_Click" Grid.Column="1" Grid.Row="4" Height="50" Foreground="White" FontSize="18"/>
-            <Button x:Name="settingsrBtn" Content="Settings" HorizontalAlignment="Stretch" VerticalAlignment="Top" Canvas.ZIndex="-2" Background="#FF2C5B9B" Grid.Column="1" Grid.Row="8" Height="50" Foreground="White" FontSize="18"/>
+            <Button x:Name="settingsBtn" Content="Settings" HorizontalAlignment="Stretch" VerticalAlignment="Top" Canvas.ZIndex="-2" Background="#FF2C5B9B" Grid.Column="1" Grid.Row="8" Height="50" Foreground="White" FontSize="18" Click="settingsBtn_Click"/>
             <Button x:Name="toggleHistoryBtn" Content="Toggle History" HorizontalAlignment="Stretch" VerticalAlignment="Top" Canvas.ZIndex="-2" Background="#FF2C5B9B" Grid.Row="10" Height="50" Foreground="White" FontSize="18" Grid.Column="1" Click="toggleHistoryBtn_Click"/>
             <Grid x:Name="historyGrid" Background="#FF3F3F3F" Grid.Column="3" Grid.Row="4" Grid.RowSpan="7" Margin="0,0,10,0" Visibility="Visible"  BorderThickness="1">
                 <Grid Margin="0,0,0,183"  Background="#FF2C5B9B">
@@ -76,9 +80,6 @@
                             <TextBlock/>
                         </DataTemplate>
                     </ListBox.ItemTemplate>
-                    <ListBoxItem>
-                        <TextBlock Text="test" Foreground="White" FontSize="20"/>
-                    </ListBoxItem>
                 </ListBox>
             </Grid>
         </Grid>
@@ -143,22 +144,18 @@
 
         </Grid>
         <Grid x:Name="WebcamFeedGrid" Visibility="Collapsed" Background="#FF212121">
-            <!--<Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
-            DisplayMode="Inline"
-            </Grid.ColumnDefinitions>-->
             <SplitView x:Name="WebcamSplitter" IsPaneOpen="False" DisplayMode="Overlay" Background="#19FFFFFF" Grid.Column="0">
                 <SplitView.Pane >
                     <Grid Background="#FF212121">
-                        <TextBlock Text="Outline Colour" Margin="10,84,10,323" FontSize="20"/>
+                        <TextBlock Text="Crosshair Colour" Margin="10,84,10,323" FontSize="20"/>
                         <TextBlock Text="Red" Margin="10,114,252,293" FontSize="20"/>
                         <Slider x:Name="redSlider" Margin="73,107,10,284" ValueChanged="redSlider_ValueChanged" Maximum="255"/>
                         <TextBlock Text="Green" Margin="10,146,252,261" FontSize="20"/>
                         <Slider x:Name="greenSlider" Margin="73,139,10,252" ValueChanged="greenSlider_ValueChanged" Maximum="255"/>
                         <TextBlock Text="Blue" Margin="10,176,252,231" FontSize="20"/>
                         <Slider x:Name="blueSlider" Margin="73,173,10,218" ValueChanged="blueSlider_ValueChanged" Maximum="255"/>
-                        <TextBlock Text="Outline Thickness" Margin="10,219,10,188" FontSize="20"/>
-                        <Slider Margin="10,242,10,149"/>
+                        <TextBlock Text="Crosshair Thickness" Margin="10,219,10,188" FontSize="20"/>
+                        <Slider x:Name="thicknessSlider" Margin="10,242,10,149" ValueChanged="thicknessSlider_ValueChanged" Maximum="8"/>
                     </Grid>
                 </SplitView.Pane>
                 <Image x:Name="imgCV" Canvas.ZIndex="2" Visibility="Visible" Source="Assets/glasses.png" />
@@ -172,11 +169,11 @@
                 </Button>
             </Grid>
         </Grid>
-        <Grid x:Name="ScreenSaverGrid" Background="#19FFFFFF" Visibility="Collapsed" Tapped="ScreenSaverGrid_Tapped">
-            <Image x:Name="screenSaverImg" Visibility="Collapsed" Margin="0,0,540,279" Source="Assets/glasses.png"/>
+        <Grid x:Name="ScreenSaverGrid" Background="#FF212121" Visibility="Collapsed" Tapped="ScreenSaverGrid_Tapped">
+            <Image x:Name="screenSaverImg"  Margin="0,0,540,279" Source="Assets/glasses.png"/>
         </Grid>
         <Grid x:Name="ProgressGrid" Visibility="Collapsed" >
-            <TextBlock x:Name="Status" Margin="398,0,166,10" Text="Initializing..." FontSize="18" TextAlignment="Right" Height="29" VerticalAlignment="Bottom"/>
+            <TextBlock x:Name="Status" Margin="390,0,172,10" Text="Initializing..." FontSize="18" TextAlignment="Right" Height="29" VerticalAlignment="Bottom"/>
             <ProgressBar x:Name="progBar" Margin="600,0,10,10" Height="29" Background="#FF585858" VerticalAlignment="Bottom" />
         </Grid>
     </Grid>

@@ -6,26 +6,19 @@
 /// <author> Petra Kujawa </author>
 
 #pragma once
-
-
 namespace VEELB
 {
 	public ref class JobViewModel sealed
 	{
 	public:
-		void Run(Windows::ApplicationModel::Background::IBackgroundTaskInstance^ taskInstance);
-		void Start(Windows::ApplicationModel::Background::IBackgroundTaskInstance^ taskInstance);
 		JobViewModel(int jobNumber);
 		JobViewModel();
 		int getJobNumber();
-		double getXPosition();
-		double getYPosition();
-		void setData(byte inData);
-
+		int getXPosition();
+		int getYPosition();
 	private:
-		int _jobNumber;
-		double _xPosition;
-		double _yPosition;
-		unsigned int _data;
+		int jobNumber;
+		double xPosition;
+		double yPosition;
 	};
 }

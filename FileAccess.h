@@ -4,9 +4,12 @@
 /// </summary>
 /// <author> Brayden Folk </author>
 
+
 #pragma once
 #include "pch.h"
 #include "MainPage.xaml.h"
+
+using namespace Windows::Storage;
 
 namespace VEELB
 {
@@ -19,18 +22,18 @@ namespace VEELB
 
 	private:
 		Platform::String^ _fileName;
-		Windows::Storage::StorageFile^ file;
+		StorageFile^ _file;
 		void CreateFile();
-		Windows::Storage::StorageFile^ _sampleFile;
+		StorageFile^ _sampleFile;
 
 	internal:
-		property Windows::Storage::StorageFile^ SampleFile
+		property StorageFile^ _SampleFile
 		{
-			Windows::Storage::StorageFile^ get()
+			StorageFile^ get()
 			{
 				return _sampleFile;
 			}
-			void set(Windows::Storage::StorageFile^ value)
+			void set(StorageFile^ value)
 			{
 				_sampleFile = value;
 			}

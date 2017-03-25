@@ -15,52 +15,26 @@ using namespace Windows::Foundation;
 using namespace Windows::Storage;
 using namespace Windows::System::Threading;
 
-
-void JobViewModel::Run(IBackgroundTaskInstance^ taskInstance)
-{
-}
-
-
 JobViewModel::JobViewModel(int jobNumber1)
 {
-	_jobNumber = jobNumber1;
+	jobNumber = jobNumber1;
 }
-
 
 JobViewModel::JobViewModel()
 {
 }
 
-
 int JobViewModel::getJobNumber()
 {
-	return _jobNumber;
+	return jobNumber;
 }
 
-
-void JobViewModel::Start(IBackgroundTaskInstance^ taskInstance)
+int JobViewModel::getXPosition()
 {
-	// Use the taskInstance->Name and/or taskInstance->InstanceId to determine
-	// what background activity to perform. In this sample, all of our
-	// background activities are the same, so there is nothing to check.
-	auto activity = ref new JobViewModel();
-	activity->Run(taskInstance);
+	return xPosition;
 }
 
-
-double JobViewModel::getXPosition()
+int JobViewModel::getYPosition()
 {
-	return _xPosition;
-}
-
-
-double JobViewModel::getYPosition()
-{
-	return _yPosition;
-}
-
-
-void JobViewModel::setData(byte inData)
-{
-	_data += inData;
+	return yPosition;
 }

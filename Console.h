@@ -6,14 +6,18 @@
 
 #pragma once
 #include "pch.h"
-#include "MainPage.xaml.h"
-
-
+#include "JobViewModel.h"
 namespace VEELB
 {
-	public ref class Console sealed
+	class Console
 	{
 	public:
 		Console();
+		Console::Console(JobViewModel^ job1, Platform::String^ timeStamp1);
+		Platform::String^ getTimeStamp();
+		JobViewModel^ getJob();
+	private:
+		JobViewModel^ job;
+		Platform::String^ timeStamp;
 	};
 }
