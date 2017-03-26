@@ -24,6 +24,11 @@ Platform::String^ Console::getTimeStamp()
 	return timeStamp;
 }
 
+void Console::setJob(JobViewModel^ job1)
+{
+	job = job1;
+}
+
 JobViewModel^ Console::getJob()
 {
 	return job;

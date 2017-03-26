@@ -89,6 +89,8 @@ namespace VEELB
 		// UI Functions
 		void CustomMessageDialog(Platform::String^ customMessage);
 		void  screenSaverAnimation();
+		void ToggleEnableMainGridBtns();
+		void UpdateLocation();
 		string convertPlatformStringToStandardString(Platform::String^ inputString);
 		Platform::String^ convertStringToPlatformString(string inputString);
 	private:
@@ -150,6 +152,12 @@ namespace VEELB
 		void thicknessSlider_ValueChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::Primitives::RangeBaseValueChangedEventArgs^ e);
 		void settingsBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 		void WebcamSplitter_LostFocus(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+		void toggleSerialBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+		void ConsoleListBox_SelectionChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::SelectionChangedEventArgs^ e);
+		void ConsoleListBox_Holding(Platform::Object^ sender, Windows::UI::Xaml::Input::HoldingRoutedEventArgs^ e);
+		void TextBlock_Holding(Platform::Object^ sender, Windows::UI::Xaml::Input::HoldingRoutedEventArgs^ e);
+		void TextBlock_DoubleTapped(Platform::Object^ sender, Windows::UI::Xaml::Input::DoubleTappedRoutedEventArgs^ e);
+		void loadButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 };
 	public ref class Device sealed
 	{

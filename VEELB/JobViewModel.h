@@ -8,7 +8,9 @@ namespace VEELB
 		JobViewModel();
 		int getJobNumber();
 		int getXPosition();
+		void setXPosition(int xPosition1);
 		int getYPosition();
+		void setYPosition(int yPosition1);
 	private:
 		int jobNumber;
 		double xPosition;

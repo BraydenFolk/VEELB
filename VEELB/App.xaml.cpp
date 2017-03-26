@@ -44,7 +44,7 @@ void App::OnLaunched(Windows::ApplicationModel::Activation::LaunchActivatedEvent
     if (IsDebuggerPresent())
     {
         // Display the current frame rate counters
-         DebugSettings->EnableFrameRateCounter = true;
+		DebugSettings->EnableFrameRateCounter = false;
     }
 #endif
     auto rootFrame = dynamic_cast<Frame^>(Window::Current->Content);

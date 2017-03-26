@@ -50,16 +50,18 @@ using namespace std;
 void Compare(Mat frame, Mat oldFrame, Mat grayScale);
 
 VideoCapture cam;
-int xPos = 235;
-int yPos = 235;
+int xPos = 0;
+int yPos = 0;
 int redSldr = 0;
 int greenSldr = 0;
 int blueSldr = 0;
 int thicknessSldr = 0;
 
 JobViewModel^ job;
-//std::vector<Console> consoleEnt;
-
+JobViewModel^ pendingjob;
+int pendingConsoleIndex = 0;
+int jobCtr = 0;
+int consoleSelectedIndex = 0;
 
 bool onExit = false;
 bool canSave = false;
@@ -81,6 +83,7 @@ MainPage::MainPage()
 	progBar->Value = 100;
 	ReadTextFromFile(1);
 	Status->Text = "Initialized!";
+	loadButton->IsEnabled = false;
 
 	consoleCtr = 0;
 }
@@ -315,13 +318,15 @@ void VEELB::MainPage::initBtn_Click(Platform::Object^ sender, Windows::UI::Xaml:
 	Platform::String^ temp;
 	try
 	{
-		/*locationTextBlk->Text == "";
+		//locationTextBlk->Text == "";
 		if (locationTextBlk->Text == "")
 		{
-			CustomMessageDialog("Location has not yet been recieved, continue?");
-			return;
-		}*/
-		if (jobNumInt > 0)
+			//CustomMessageDialog("Location has not yet been recieved, continue?");
+			//return;
+			Status->Text = "Location n/a...";
+		}
+
+		/*if (jobNumInt > 0 && locationTextBlk->Text != "")
 		{
 			Platform::String^ location = locationTextBlk->Text;
 			std::wstring str = location->Data();
@@ -331,12 +336,28 @@ void VEELB::MainPage::initBtn_Click(Platform::Object^ sender, Windows::UI::Xaml:
 
 			xPos = _wtol(x.data());
 			yPos = _wtol(y.data());
+
+			job->setXPosition(xPos);
+			job->setYPosition(yPos);
+
+			consoleEntries[jobCtr].setJob(job);
 		}
 		else
 		{
 			xPos = 0;
 			yPos = 0;
+		}*/
+		if (job != nullptr)
+		{
+			xPos = job->getXPosition();
+			yPos = job->getYPosition();
 		}
+
+		/*if (!job->Equals(NULL))
+		{
+			xPos = job->getXPosition();
+			yPos = job->getYPosition();
+		}*/
 
 		if (firstInit)
 		{
@@ -377,6 +398,8 @@ void VEELB::MainPage::initBtn_Click(Platform::Object^ sender, Windows::UI::Xaml:
 
 			thicknessSlider->Value = (double)(_wtol(strLeft.data()));
 			progBar->Value += 10;
+
+			Status->Text = "Config loaded!";
 			firstInit = false;
 		}
 	}
@@ -459,6 +482,7 @@ void VEELB::MainPage::oneBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::
 	validate(sender, e);
 	jobIdNumTxtBlock->Text += "1";
 	jobNumString = jobIdNumTxtBlock->Text;
+	if (jobIdNumTxtBlock->Text->Length() == 6) jobIdNumErrorTxtBlock->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
 }
 
 void VEELB::MainPage::twoBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
@@ -466,6 +490,7 @@ void VEELB::MainPage::twoBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::
 	validate(sender, e);
 	jobIdNumTxtBlock->Text += "2";
 	jobNumString = jobIdNumTxtBlock->Text;
+	if (jobIdNumTxtBlock->Text->Length() == 6) jobIdNumErrorTxtBlock->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
 }
 
 
@@ -474,6 +499,7 @@ void VEELB::MainPage::threeBtn_Click(Platform::Object^ sender, Windows::UI::Xaml
 	validate(sender, e);
 	jobIdNumTxtBlock->Text += "3";
 	jobNumString = jobIdNumTxtBlock->Text;
+	if (jobIdNumTxtBlock->Text->Length() == 6) jobIdNumErrorTxtBlock->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
 }
 
 
@@ -482,6 +508,7 @@ void VEELB::MainPage::fourBtn_Click(Platform::Object^ sender, Windows::UI::Xaml:
 	validate(sender, e);
 	jobIdNumTxtBlock->Text += "4";
 	jobNumString = jobIdNumTxtBlock->Text;
+	if (jobIdNumTxtBlock->Text->Length() == 6) jobIdNumErrorTxtBlock->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
 }
 
 
@@ -490,6 +517,7 @@ void VEELB::MainPage::fiveBtn_Click(Platform::Object^ sender, Windows::UI::Xaml:
 	validate(sender, e);
 	jobIdNumTxtBlock->Text += "5";
 	jobNumString = jobIdNumTxtBlock->Text;
+	if (jobIdNumTxtBlock->Text->Length() == 6) jobIdNumErrorTxtBlock->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
 }
 
 
@@ -498,6 +526,7 @@ void VEELB::MainPage::sixBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::
 	validate(sender, e);
 	jobIdNumTxtBlock->Text += "6";
 	jobNumString = jobIdNumTxtBlock->Text;
+	if (jobIdNumTxtBlock->Text->Length() == 6) jobIdNumErrorTxtBlock->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
 }
 
 
@@ -506,6 +535,7 @@ void VEELB::MainPage::sevenBtn_Click(Platform::Object^ sender, Windows::UI::Xaml
 	validate(sender, e);
 	jobIdNumTxtBlock->Text += "7";
 	jobNumString = jobIdNumTxtBlock->Text;
+	if (jobIdNumTxtBlock->Text->Length() == 6) jobIdNumErrorTxtBlock->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
 }
 
 
@@ -514,6 +544,7 @@ void VEELB::MainPage::eightBtn_Click(Platform::Object^ sender, Windows::UI::Xaml
 	validate(sender, e);
 	jobIdNumTxtBlock->Text += "8";
 	jobNumString = jobIdNumTxtBlock->Text;
+	if (jobIdNumTxtBlock->Text->Length() == 6) jobIdNumErrorTxtBlock->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
 }
 
 
@@ -522,6 +553,7 @@ void VEELB::MainPage::nineBtn_Click(Platform::Object^ sender, Windows::UI::Xaml:
 	validate(sender, e);
 	jobIdNumTxtBlock->Text += "9";
 	jobNumString = jobIdNumTxtBlock->Text;
+	if (jobIdNumTxtBlock->Text->Length() == 6) jobIdNumErrorTxtBlock->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
 }
 
 
@@ -530,6 +562,7 @@ void VEELB::MainPage::zeroBtn_Click(Platform::Object^ sender, Windows::UI::Xaml:
 	validate(sender, e);
 	jobIdNumTxtBlock->Text += "0";
 	jobNumString = jobIdNumTxtBlock->Text;
+	if (jobIdNumTxtBlock->Text->Length() == 6) jobIdNumErrorTxtBlock->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
 }
 
 
@@ -569,10 +602,13 @@ void VEELB::MainPage::clearBtn_Click(Platform::Object^ sender, Windows::UI::Xaml
 
 void MainPage::returnBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
+	Console consoleEntry;
+
 	if (jobIdNumTxtBlock->Text->Length() != 6)
 	{
-		//jobIdNumTxtBlock->Foreground = std::Scalar(255, 0, 0);
-		// TODO: change foregroud colour, notify user that it must be 6 digits, set error flag so that we can notify the number button clicks
+		//Windows::UI::Xaml::Media::Brush ^red_Fill = ref new Windows::UI::Xaml::Media::SolidColorBrush(Windows::UI::Colors::Red);
+
+		jobIdNumErrorTxtBlock->Visibility = Windows::UI::Xaml::Visibility::Visible;
 		return;
 	}
 
@@ -583,7 +619,7 @@ void MainPage::returnBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::Rout
 	//xPos = job->getXPosition();
 
 	// TODO: save last returned number
-	mainGridJobNumberTxtBlk->Text = "Job number for session: " + jobNumString;
+	mainGridJobNumberTxtBlk->Text = "Current Job number: " + jobNumString;
 	
 	JobNumberGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
 	MainGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;
@@ -594,17 +630,19 @@ void MainPage::returnBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::Rout
 	Windows::Globalization::Calendar^ c = ref new Windows::Globalization::Calendar;
 	Platform::String^ dateTimeNow = c->Year.ToString() + "-" + c->Month + "-" + c->Day + " " + c->Hour + ":" + c->Minute + ":" + c->Second;
 
-	txtBlock->Text = dateTimeNow + "        Job: " + jobNumString;
+	txtBlock->Text = "  Job: " + jobNumString + "                                                                    " + dateTimeNow;
 
 	lbItem->Content = txtBlock;
 	itemCollection->Append(lbItem);
 	ConsoleListBox->ItemsSource = itemCollection;
 
-	//int ctr = currentConsole->getJobCtr();
-	//consoleEntries
+	consoleEntry = Console(job, dateTimeNow);
+	consoleEntries[jobCtr] = consoleEntry;
+	ConsoleListBox->SelectedIndex = jobCtr;
 
+	jobCtr++;
 
-	// TODO: implement necessary functions in console
+	loadButton->IsEnabled = true;
 
 	if (_serialPort != nullptr)
 	{
@@ -630,6 +668,26 @@ void MainPage::returnBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::Rout
 	{
 		//status->Text = "Select a device and connect";
 	}
+}
+
+void VEELB::MainPage::ConsoleListBox_SelectionChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::SelectionChangedEventArgs^ e)
+{
+	ConsoleListBox->ScrollIntoView(ConsoleListBox->SelectedIndex);
+	consoleSelectedIndex = ConsoleListBox->SelectedIndex;
+
+	/*job = consoleEntries[consoleSelectedIndex].getJob();
+
+	loadButton->Content = job->getJobNumber().ToString();*/
+}
+
+void VEELB::MainPage::loadButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
+{
+	job = consoleEntries[consoleSelectedIndex].getJob();
+
+	/*xPos = job->getXPosition();
+	yPos = job->getYPosition();*/
+
+	mainGridJobNumberTxtBlk->Text = "Current Job number: " + job->getJobNumber().ToString();
 }
 
 int main() 
@@ -697,25 +755,59 @@ void MainPage::settingsWebcamBtn_Click(Platform::Object^ sender, Windows::UI::Xa
 
 void VEELB::MainPage::redSlider_ValueChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::Primitives::RangeBaseValueChangedEventArgs^ e)
 {
+	if (redSlider->Value > 255) redSlider->Value = 255; // touch slider is a little wierd when at max
 	redSldr = redSlider->Value;
 }
 
 void VEELB::MainPage::greenSlider_ValueChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::Primitives::RangeBaseValueChangedEventArgs^ e)
 {
+	if (greenSlider->Value > 255) greenSlider->Value = 255; // touch slider is a little wierd when at max
 	greenSldr = greenSlider->Value;
 }
 
 void VEELB::MainPage::blueSlider_ValueChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::Primitives::RangeBaseValueChangedEventArgs^ e)
 {
+	if (blueSlider->Value > 255) blueSlider->Value = 255; // touch slider is a little wierd when at max
 	blueSldr = blueSlider->Value;
 }
 
 void VEELB::MainPage::thicknessSlider_ValueChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::Primitives::RangeBaseValueChangedEventArgs^ e)
 {
+	if (thicknessSlider->Value > 8) thicknessSlider->Value = 8; // touch slider is a little wierd when at max
 	thicknessSldr = thicknessSlider->Value;
 }
 
 // Serial comms
+// UI toggle
+void VEELB::MainPage::toggleSerialBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
+{
+	if (_serialPort != nullptr)
+	{
+		CancelReadTask();
+		CloseDevice();
+		ListAvailablePorts();
+		Status->Text = "Serial Disconnected!";
+		ToggleEnableMainGridBtns();
+	}
+	else
+	{
+		Device^ selectedDevice = static_cast<Device^>(_availableDevices->GetAt(0));
+		Windows::Devices::Enumeration::DeviceInformation ^entry = selectedDevice->DeviceInfo;
+
+		concurrency::create_task(ConnectToSerialDeviceAsync(entry, cancellationTokenSource->get_token()));
+		Status->Text = "Serial Connected!";
+		ToggleEnableMainGridBtns();
+	}
+}
+
+void VEELB::MainPage::ToggleEnableMainGridBtns()
+{
+	//initBtn->IsEnabled = !initBtn->IsEnabled;
+	enterJobNumberBtn->IsEnabled = !enterJobNumberBtn->IsEnabled;
+	/*settingsBtn->IsEnabled = !settingsBtn->IsEnabled;
+	toggleHistoryBtn->IsEnabled = !toggleHistoryBtn->IsEnabled;*/
+}
+
 /// <summary>
 /// Finds all serial devices available on the device and populates a list with the Ids of each device.
 /// </summary>
@@ -872,15 +964,41 @@ Concurrency::task<void> VEELB::MainPage::ReadAsync(Concurrency::cancellation_tok
 		progBar->Value += 10;
 		if (bytesRead > 0)
 		{
+			//job = consoleEntries[jobCtr - 1].getJob();
+
+			//ToggleEnableMainGridBtns();
+
 			locationTextBlk->Text += _dataReaderObject->ReadString(bytesRead);
+			if (locationTextBlk->Text->Length() > 9)
+			{
+				UpdateLocation();
+			}
+
 			// TODO: validate 
-			Status->Text = "Location obtained!";
+
+			Status->Text = "Location recieved!";
 			progBar->Value = 100;
 		}
 		// start listening again after done with this chunk of incoming data
 		Listen();
 
 	});
+}
+
+void VEELB::MainPage::UpdateLocation()
+{
+	Platform::String^ location = locationTextBlk->Text;
+	std::wstring str = location->Data();
+
+	std::wstring x = str.substr(3, 3);
+	std::wstring y = str.substr(6, 3);
+
+	job->setXPosition(_wtol(x.data()));
+	job->setYPosition(_wtol(y.data()));
+
+	consoleEntries[jobCtr-1].setJob(job);
+
+	//ToggleEnableMainGridBtns();
 }
 
 /// <summary>
