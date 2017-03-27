@@ -31,18 +31,12 @@ using namespace std;
 
 namespace VEELB
 {
-	/// <summary>
-	/// An empty page that can be used on its own or navigated to within a Frame.
-	/// </summary>
 	public ref class MainPage sealed
 	{
 	public:
 		MainPage();
 		// Serial comms
 		static Windows::Foundation::IAsyncOperation<Windows::Devices::Enumeration::DeviceInformationCollection ^> ^ListAvailableSerialDevicesAsync(void);
-		// For XAML binding purposes, use the IObservableVector interface containing Object^ objects. 
-		// This wraps the real implementation of _availableDevices which is implemented as a Vector.
-		// See "Data Binding Overview (XAML)" https://msdn.microsoft.com/en-us/library/windows/apps/xaml/hh758320.aspx
 		property Windows::Foundation::Collections::IObservableVector<Platform::Object^>^ AvailableDevices
 		{
 			Windows::Foundation::Collections::IObservableVector<Platform::Object^>^ get()
@@ -60,7 +54,10 @@ namespace VEELB
 		Console consoleEntries[1000];
 		int consoleCtr;
 		// Event handlers
-		void validate(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+		void settingsBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+		void toggleSerialBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+		void ConsoleListBox_SelectionChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::SelectionChangedEventArgs^ e);
+		void loadButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 		void initBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 		void enterJobNumberBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 		void oneBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
@@ -86,12 +83,14 @@ namespace VEELB
 		void redSlider_ValueChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::Primitives::RangeBaseValueChangedEventArgs^ e);
 		void greenSlider_ValueChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::Primitives::RangeBaseValueChangedEventArgs^ e);
 		void blueSlider_ValueChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::Primitives::RangeBaseValueChangedEventArgs^ e);
+		void thicknessSlider_ValueChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::Primitives::RangeBaseValueChangedEventArgs^ e);
 		// UI Functions
 		void CustomMessageDialog(Platform::String^ customMessage);
 		void  screenSaverAnimation();
 		void ToggleEnableMainGridBtns();
 		void UpdateLocation();
 		string convertPlatformStringToStandardString(Platform::String^ inputString);
+		void validate(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 		Platform::String^ convertStringToPlatformString(string inputString);
 	private:
 		// Serial comms
@@ -102,15 +101,12 @@ namespace VEELB
 		Concurrency::cancellation_token_source* cancellationTokenSource;
 
 		void ListAvailablePorts(void);
-		bool IsTracer(Platform::String^ id);
 		vector<int> SeparateIntoDigits(unsigned int value);
 		int CreateChecksum(vector<int> digits);
 		void CancelReadTask(void);
 		void CloseDevice(void);
 		void Listen();
 
-		/*Concurrency::task<void> WriteAsync(Concurrency::cancellation_token cancellationToken, Platform::String^ message);*/
-		//Concurrency::task<void> MainPage::WriteAsync(Concurrency::cancellation_token cancellationToken);
 		Concurrency::task<void> MainPage::WriteAsync(Concurrency::cancellation_token cancellationToken, int jobNum);
 		Concurrency::task<void> ReadAsync(Concurrency::cancellation_token cancellationToken);
 		Concurrency::task<void> ConnectToSerialDeviceAsync(Windows::Devices::Enumeration::DeviceInformation ^device, Concurrency::cancellation_token cancellationToken);
@@ -148,16 +144,6 @@ namespace VEELB
 				logFile = value;
 			}
 		}
-	private:
-		void thicknessSlider_ValueChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::Primitives::RangeBaseValueChangedEventArgs^ e);
-		void settingsBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
-		void WebcamSplitter_LostFocus(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
-		void toggleSerialBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
-		void ConsoleListBox_SelectionChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::SelectionChangedEventArgs^ e);
-		void ConsoleListBox_Holding(Platform::Object^ sender, Windows::UI::Xaml::Input::HoldingRoutedEventArgs^ e);
-		void TextBlock_Holding(Platform::Object^ sender, Windows::UI::Xaml::Input::HoldingRoutedEventArgs^ e);
-		void TextBlock_DoubleTapped(Platform::Object^ sender, Windows::UI::Xaml::Input::DoubleTappedRoutedEventArgs^ e);
-		void loadButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 };
 	public ref class Device sealed
 	{

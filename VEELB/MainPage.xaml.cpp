@@ -48,6 +48,7 @@ using namespace Platform;
 using namespace std;
 
 void Compare(Mat frame, Mat oldFrame, Mat grayScale);
+cv::String convertPlatformToCV(Platform::String^ input);
 
 VideoCapture cam;
 int xPos = 0;
@@ -92,6 +93,8 @@ MainPage::MainPage()
 /// <summary>
 /// Background message loop task for webcam feed, allows for functionality such as initializing the webcam,
 ///		retrieving frames from the webcam and passes frames to compare which is where the main work is being done.
+/// <param name=”paramName”> void </param> 
+/// <returns> void </returns>
 /// </summary>
 void cvVideoTask()
 {
@@ -99,9 +102,6 @@ void cvVideoTask()
 
 	vector<vector<cv::Point> > contours;
 	vector<Vec4i> hierarchy;
-
-	/*xPos = job->getXPosition;
-	yPos = job->getYPosition;*/
 
 	cam.open(0);
 
@@ -137,21 +137,26 @@ struct darkCoords
 };
 
 int seuil = 20;
+/// <summary>
+/// This function takes in the current and last frames, compares them to eachother to determine if there is motion, if there is 
+///		the image processing and lens detection will not be conducted due to the fact that there exists unneccesary and harmful
+///		pixels in the frames. The image processing portion of the function detects the three dots on the lens and saves the coordinates,
+///		so that the crosshair can be placed connecting the three dots. Also, if the location of the midpoint of the lens is within +/- 5
+///		pixels, it is deemed correctly located.
+/// <param name=”frame”> current webcam frame </param> 
+/// <param name = ”oldFrame”>Previous webcam frame< / param>
+/// <param name = ”frame”> grayscale version of webcam < / param>
+/// <returns> current updated frame </returns>
+/// </summary>
 void Compare(Mat frame, Mat oldFrame, Mat grayScale)
 {
 	Mat canny, gray;
 	int colourVal = 0;
 	int topX = 0;
-	int topY = 0;
 	int bottomX = 0;
-	int bottomY = 0;
 	int leftY = 0;
-	//int topX = 0;
 	int rightY = 0;
-	//int bottomY = 0;
 	int first = 0;
-	int changed = 0;
-	int thresh = 100;
 
 	double blue = (double)blueSldr;
 	double green = (double)greenSldr;
@@ -161,9 +166,10 @@ void Compare(Mat frame, Mat oldFrame, Mat grayScale)
 	int redLocked = 255;
 	int greenLocked = 0;
 	int blueLocked = 0;
-
-
 	int compareCtr = 0;
+
+	bool motion = false;
+
 	if (oldFrame.rows == 0)
 		return;
 	for (int i = 0; i < frame.rows; i++)
@@ -179,9 +185,7 @@ void Compare(Mat frame, Mat oldFrame, Mat grayScale)
 		}
 	}
 
-	bool motion = false;
-
-	if (compareCtr > 1000 /*|| abs(leftY - rightY) < 50*/)
+	if (compareCtr > 1000)
 	{
 		motion = true;
 	}
@@ -206,37 +210,10 @@ void Compare(Mat frame, Mat oldFrame, Mat grayScale)
 
 						if (first == 0)
 						{
-							/*topX = i;
-							topY = j;*/
 							topX = i;
 							leftY = j;
-
-							/*int clusterCtr = 0;
-							for (int p = 0; p < 7; p++)
-							{
-								Vec3b clusterColour = frame.at<Vec3b>(i, j + p);
-
-								if (clusterColour.val[0] < 60 && clusterColour.val[1] < 60 && clusterColour.val[2] < 60)
-								{
-									clusterCtr++;
-									if (clusterCtr > 15)
-									{
-										break;
-									}
-								}
-							}*/
-
-							/*if (clusterCtr > 5)
-							{*/
-								first = 1;
-
-							//}
+							first = 1;
 						}
-
-
-
-						/*bottomX = i;
-						bottomY = j;*/
 						bottomX = i;
 						rightY = j;
 					}
@@ -247,20 +224,16 @@ void Compare(Mat frame, Mat oldFrame, Mat grayScale)
 		{
 			Platform::String^ temp = e->Message;
 		}
-		// Template line
-		cv::line(frame, cv::Point(0, 0), cv::Point(frame.cols, 0), Scalar(red, green, blue), thickness);
+		
+		cv::line(frame, cv::Point(0, 0), cv::Point(frame.cols, 0), Scalar(red, green, blue), thickness); // Template line
 
-		int midX = (topX + bottomX) / 2;
+		int midX = (topX + bottomX) / 2;	// lens midpoint
 		int midY = (leftY + rightY) / 2;
 
 		cv::Point pt1(leftY, topX + 5);
 		cv::Point pt2(rightY, bottomX - 5);
 
-		cv::Point dv(0, 0); // get direction vector
-		dv.x = pt2.x - pt1.x;
-		dv.y = pt2.y - pt1.y;
-
-		cv::line(frame, cv::Point(midY, midX + 25), cv::Point(midY, midX - 25), Scalar(red, green, blue), thickness);
+		cv::line(frame, cv::Point(midY, midX + 25), cv::Point(midY, midX - 25), Scalar(red, green, blue), thickness); // lens crosshair
 		cv::line(frame, pt1, pt2, Scalar(red, green, blue), thickness);
 		cv::circle(frame, cv::Point(midY, midX), thickness, Scalar(150, 255, 0), 4, 8, 0);
 
@@ -270,13 +243,42 @@ void Compare(Mat frame, Mat oldFrame, Mat grayScale)
 			greenLocked = 255;
 			blueLocked = 0;
 		}
+
+		Platform::String^ lensLocationText = "Lens Location (" + midX.ToString() + ", " + midY.ToString() + ")";
+		cv::String lensLocationTextS = convertPlatformToCV(lensLocationText); // location text
+		cv::putText(frame, lensLocationTextS, cv::Point(15, 420), FONT_HERSHEY_COMPLEX_SMALL, 0.8, Scalar(0, 0, 0), 1.25, CV_AA);
 	}
 
+	// Target location
 	cv::line(frame, cv::Point(xPos, yPos - 25), cv::Point(xPos, yPos + 25), Scalar(redLocked, greenLocked, blueLocked), thickness);
 	cv::line(frame, cv::Point(xPos - 25, yPos), cv::Point(xPos + 25, yPos), Scalar(redLocked, greenLocked, blueLocked), thickness);
+	
+	Platform::String^ locationText = "Target Location (" + xPos.ToString() + ", " + yPos.ToString() + ")";
+	cv::String locationTextS = convertPlatformToCV(locationText); // location text
+	cv::putText(frame, locationTextS, cv::Point(15, 400), FONT_HERSHEY_COMPLEX_SMALL, 0.8, Scalar(0, 0, 0), 1.25, CV_AA);
+}
+
+/// <summary>
+/// Converts platform strings to open cv strings for location text
+/// <param name=”input”> input text </param> 
+/// <returns> open cv string </returns>
+/// </summary>
+cv::String convertPlatformToCV(Platform::String^ input)
+{
+	wstring tempw(input->Begin());
+	string temps(tempw.begin(), tempw.end());
+	cv::String output(temps);
+	return output;
 }
 
 // UI Functions
+/// <summary>
+/// Displays the correct UI grids once the webcam is exited, also setting the onExit so the webcam feed can be disposed
+///		as well as saving of the settings to the config file.
+/// <param name=”sender”> sender object </param> 
+/// <param name=”e”> xaml routed event </param> 
+/// <returns> void </returns>
+/// </summary>
 void VEELB::MainPage::exitWebcamBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
 	onExit = true;
@@ -286,12 +288,14 @@ void VEELB::MainPage::exitWebcamBtn_Click(Platform::Object^ sender, Windows::UI:
 
 	Platform::String^ txt = redSldr.ToString() + " " + greenSldr.ToString() + " " + blueSldr.ToString() + " " + thicknessSldr.ToString();
 
-	if (WriteTextToFile(1, txt))
-	{
-		// success
-	}
+	if (WriteTextToFile(1, txt)) {} // success
 }
 
+/// <summary>
+/// Displays a custom message box
+/// <param name=”customMessage”> message box statement </param>  
+/// <returns> void </returns>
+/// </summary>
 void VEELB::MainPage::CustomMessageDialog(Platform::String^ customMessage)
 {
 	// Create the message dialog and set its content and title
@@ -313,51 +317,27 @@ void VEELB::MainPage::CustomMessageDialog(Platform::String^ customMessage)
 }
 
 // Event handlers
+/// <summary>
+/// Initializes the webcam feed and retrieves the job's target location, and upon first init, parses the config file.
+/// <param name=”sender”> sender object </param> 
+/// <param name=”e”> xaml routed event </param> 
+/// <returns> void </returns>
+/// </summary>
 void VEELB::MainPage::initBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
 	Platform::String^ temp;
 	try
 	{
-		//locationTextBlk->Text == "";
 		if (locationTextBlk->Text == "")
 		{
-			//CustomMessageDialog("Location has not yet been recieved, continue?");
-			//return;
 			Status->Text = "Location n/a...";
 		}
 
-		/*if (jobNumInt > 0 && locationTextBlk->Text != "")
-		{
-			Platform::String^ location = locationTextBlk->Text;
-			std::wstring str = location->Data();
-
-			std::wstring x = str.substr(3, 3);
-			std::wstring y = str.substr(6, 3);
-
-			xPos = _wtol(x.data());
-			yPos = _wtol(y.data());
-
-			job->setXPosition(xPos);
-			job->setYPosition(yPos);
-
-			consoleEntries[jobCtr].setJob(job);
-		}
-		else
-		{
-			xPos = 0;
-			yPos = 0;
-		}*/
 		if (job != nullptr)
 		{
 			xPos = job->getXPosition();
 			yPos = job->getYPosition();
 		}
-
-		/*if (!job->Equals(NULL))
-		{
-			xPos = job->getXPosition();
-			yPos = job->getYPosition();
-		}*/
 
 		if (firstInit)
 		{
@@ -419,11 +399,13 @@ void VEELB::MainPage::initBtn_Click(Platform::Object^ sender, Windows::UI::Xaml:
 	onExit = false;
 }
 
+/// <summary>
+/// screenSaverAnimation
+/// <returns> void </returns>
+/// </summary>
 void VEELB::MainPage::screenSaverAnimation()
-{//rows 768, cols 432
+{
 	MainGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
-	//
-
 	ScreenSaverGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;	
 	Sleep(3000);
 
@@ -463,12 +445,37 @@ void VEELB::MainPage::screenSaverAnimation()
 	}
 }
 
+
+/// <summary>
+/// Button click event for settings grid, inits webcam feed with splitter open
+/// <param name=”sender”> sender object </param> 
+/// <param name=”e”> xaml routed event </param> 
+/// <returns> void </returns>
+/// </summary>
+void VEELB::MainPage::settingsBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
+{
+	initBtn_Click(sender, e);
+	WebcamSplitter->IsPaneOpen = true;
+}
+
+/// <summary>
+/// Button click event, displays the correct UI Grids
+/// <param name=”sender”> sender object </param> 
+/// <param name=”e”> xaml routed event </param> 
+/// <returns> void </returns>
+/// </summary>
 void VEELB::MainPage::enterJobNumberBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
 	MainGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
 	JobNumberGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;
 }
 
+/// <summary>
+/// Validates entered job number to ensure that it is <= 6 digits
+/// <param name=”sender”> sender object </param> 
+/// <param name=”e”> xaml routed event </param> 
+/// <returns> void </returns>
+/// </summary>
 void VEELB::MainPage::validate(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
 	if (jobIdNumTxtBlock->Text->Length() == 6)
@@ -477,6 +484,12 @@ void VEELB::MainPage::validate(Platform::Object^ sender, Windows::UI::Xaml::Rout
 	}
 }
 
+/// <summary>
+/// Button click event for job number screen
+/// <param name=”sender”> sender object </param> 
+/// <param name=”e”> xaml routed event </param> 
+/// <returns> void </returns>
+/// </summary>
 void VEELB::MainPage::oneBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
 	validate(sender, e);
@@ -485,6 +498,12 @@ void VEELB::MainPage::oneBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::
 	if (jobIdNumTxtBlock->Text->Length() == 6) jobIdNumErrorTxtBlock->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
 }
 
+/// <summary>
+/// Button click event for job number screen
+/// <param name=”sender”> sender object </param> 
+/// <param name=”e”> xaml routed event </param> 
+/// <returns> void </returns>
+/// </summary>
 void VEELB::MainPage::twoBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
 	validate(sender, e);
@@ -493,7 +512,12 @@ void VEELB::MainPage::twoBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::
 	if (jobIdNumTxtBlock->Text->Length() == 6) jobIdNumErrorTxtBlock->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
 }
 
-
+/// <summary>
+/// Button click event for job number screen
+/// <param name=”sender”> sender object </param> 
+/// <param name=”e”> xaml routed event </param> 
+/// <returns> void </returns>
+/// </summary>
 void VEELB::MainPage::threeBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
 	validate(sender, e);
@@ -502,7 +526,12 @@ void VEELB::MainPage::threeBtn_Click(Platform::Object^ sender, Windows::UI::Xaml
 	if (jobIdNumTxtBlock->Text->Length() == 6) jobIdNumErrorTxtBlock->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
 }
 
-
+/// <summary>
+/// Button click event for job number screen
+/// <param name=”sender”> sender object </param> 
+/// <param name=”e”> xaml routed event </param> 
+/// <returns> void </returns>
+/// </summary>
 void VEELB::MainPage::fourBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
 	validate(sender, e);
@@ -511,7 +540,12 @@ void VEELB::MainPage::fourBtn_Click(Platform::Object^ sender, Windows::UI::Xaml:
 	if (jobIdNumTxtBlock->Text->Length() == 6) jobIdNumErrorTxtBlock->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
 }
 
-
+/// <summary>
+/// Button click event for job number screen
+/// <param name=”sender”> sender object </param> 
+/// <param name=”e”> xaml routed event </param> 
+/// <returns> void </returns>
+/// </summary>
 void VEELB::MainPage::fiveBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
 	validate(sender, e);
@@ -520,7 +554,12 @@ void VEELB::MainPage::fiveBtn_Click(Platform::Object^ sender, Windows::UI::Xaml:
 	if (jobIdNumTxtBlock->Text->Length() == 6) jobIdNumErrorTxtBlock->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
 }
 
-
+/// <summary>
+/// Button click event for job number screen
+/// <param name=”sender”> sender object </param> 
+/// <param name=”e”> xaml routed event </param> 
+/// <returns> void </returns>
+/// </summary>
 void VEELB::MainPage::sixBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
 	validate(sender, e);
@@ -529,7 +568,12 @@ void VEELB::MainPage::sixBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::
 	if (jobIdNumTxtBlock->Text->Length() == 6) jobIdNumErrorTxtBlock->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
 }
 
-
+/// <summary>
+/// Button click event for job number screen
+/// <param name=”sender”> sender object </param> 
+/// <param name=”e”> xaml routed event </param> 
+/// <returns> void </returns>
+/// </summary>
 void VEELB::MainPage::sevenBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
 	validate(sender, e);
@@ -538,7 +582,12 @@ void VEELB::MainPage::sevenBtn_Click(Platform::Object^ sender, Windows::UI::Xaml
 	if (jobIdNumTxtBlock->Text->Length() == 6) jobIdNumErrorTxtBlock->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
 }
 
-
+/// <summary>
+/// Button click event for job number screen
+/// <param name=”sender”> sender object </param> 
+/// <param name=”e”> xaml routed event </param> 
+/// <returns> void </returns>
+/// </summary>
 void VEELB::MainPage::eightBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
 	validate(sender, e);
@@ -547,7 +596,12 @@ void VEELB::MainPage::eightBtn_Click(Platform::Object^ sender, Windows::UI::Xaml
 	if (jobIdNumTxtBlock->Text->Length() == 6) jobIdNumErrorTxtBlock->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
 }
 
-
+/// <summary>
+/// Button click event for job number screen
+/// <param name=”sender”> sender object </param> 
+/// <param name=”e”> xaml routed event </param> 
+/// <returns> void </returns>
+/// </summary>
 void VEELB::MainPage::nineBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
 	validate(sender, e);
@@ -556,7 +610,12 @@ void VEELB::MainPage::nineBtn_Click(Platform::Object^ sender, Windows::UI::Xaml:
 	if (jobIdNumTxtBlock->Text->Length() == 6) jobIdNumErrorTxtBlock->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
 }
 
-
+/// <summary>
+/// Button click event for job number screen
+/// <param name=”sender”> sender object </param> 
+/// <param name=”e”> xaml routed event </param> 
+/// <returns> void </returns>
+/// </summary>
 void VEELB::MainPage::zeroBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
 	validate(sender, e);
@@ -565,7 +624,12 @@ void VEELB::MainPage::zeroBtn_Click(Platform::Object^ sender, Windows::UI::Xaml:
 	if (jobIdNumTxtBlock->Text->Length() == 6) jobIdNumErrorTxtBlock->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
 }
 
-
+/// <summary>
+/// Job number backspace button, and checks if it is safe to backspace
+/// <param name=”sender”> sender object </param> 
+/// <param name=”e”> xaml routed event </param> 
+/// <returns> void </returns>
+/// </summary>
 void VEELB::MainPage::backspaceBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
 	Platform::String^ number = jobIdNumTxtBlock->Text;
@@ -578,6 +642,11 @@ void VEELB::MainPage::backspaceBtn_Click(Platform::Object^ sender, Windows::UI::
 	}
 }
 
+/// <summary>
+/// converts platform string to std
+/// <param name=”inputString”> text to convert </param> 
+/// <returns> standard string of input text </returns>
+/// </summary>
 string VEELB::MainPage::convertPlatformStringToStandardString(Platform::String^ inputString)
 {
 	wstring tempw(inputString->Begin());
@@ -586,6 +655,11 @@ string VEELB::MainPage::convertPlatformStringToStandardString(Platform::String^ 
 
 }
 
+/// <summary>
+/// converts std string to platform string
+/// <param name=”inputString”> text to convert </param> 
+/// <returns> standard string of input text </returns>
+/// </summary>
 Platform::String^ VEELB::MainPage::convertStringToPlatformString(string inputString)
 {
 	wstring_convert<std::codecvt_utf8<wchar_t>> converter;
@@ -594,31 +668,37 @@ Platform::String^ VEELB::MainPage::convertStringToPlatformString(string inputStr
 	return retval;
 }
 
+/// <summary>
+/// Button click event for job number screen
+/// <param name=”sender”> sender object </param> 
+/// <param name=”e”> xaml routed event </param> 
+/// <returns> void </returns>
+/// </summary>
 void VEELB::MainPage::clearBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
 	jobIdNumTxtBlock->Text = "";
 	jobNumString = jobIdNumTxtBlock->Text;
 }
 
+/// <summary>
+/// Button click event for job number screen
+///	Creates a console entry, with associated job for entered job number, validates job number and sends job number to tracer
+/// <param name=”sender”> sender object </param> 
+/// <param name=”e”> xaml routed event </param> 
+/// <returns> void </returns>
+/// </summary>
 void MainPage::returnBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
 	Console consoleEntry;
 
 	if (jobIdNumTxtBlock->Text->Length() != 6)
 	{
-		//Windows::UI::Xaml::Media::Brush ^red_Fill = ref new Windows::UI::Xaml::Media::SolidColorBrush(Windows::UI::Colors::Red);
-
 		jobIdNumErrorTxtBlock->Visibility = Windows::UI::Xaml::Visibility::Visible;
 		return;
 	}
 
 	jobNumInt = _wtoi(jobNumString->Data());
-
 	job = ref new JobViewModel(jobNumInt);
-
-	//xPos = job->getXPosition();
-
-	// TODO: save last returned number
 	mainGridJobNumberTxtBlk->Text = "Current Job number: " + jobNumString;
 	
 	JobNumberGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
@@ -656,36 +736,38 @@ void MainPage::returnBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::Rout
 			}
 			else
 			{
-				//status->Text = "Enter the text you want to write and then click on 'WRITE'";
 			}
 		}
 		catch (Platform::Exception ^ex)
 		{
-			//status->Text = "sendTextButton_Click: " + ex->Message;
 		}
 	}
 	else
 	{
-		//status->Text = "Select a device and connect";
 	}
 }
 
+/// <summary>
+/// selection changed for console list box
+/// <param name=”sender”> sender object </param> 
+/// <param name=”e”> xaml routed event </param> 
+/// <returns> void </returns>
+/// </summary>
 void VEELB::MainPage::ConsoleListBox_SelectionChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::SelectionChangedEventArgs^ e)
 {
 	ConsoleListBox->ScrollIntoView(ConsoleListBox->SelectedIndex);
 	consoleSelectedIndex = ConsoleListBox->SelectedIndex;
-
-	/*job = consoleEntries[consoleSelectedIndex].getJob();
-
-	loadButton->Content = job->getJobNumber().ToString();*/
 }
 
+/// <summary>
+/// Loads previous job
+/// <param name=”sender”> sender object </param> 
+/// <param name=”e”> xaml routed event </param> 
+/// <returns> void </returns>
+/// </summary>
 void VEELB::MainPage::loadButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
 	job = consoleEntries[consoleSelectedIndex].getJob();
-
-	/*xPos = job->getXPosition();
-	yPos = job->getYPosition();*/
 
 	mainGridJobNumberTxtBlk->Text = "Current Job number: " + job->getJobNumber().ToString();
 }
@@ -694,12 +776,24 @@ int main()
 {
 }
 
+/// <summary>
+/// tap event for screen saver -- not yet implemented
+/// <param name=”sender”> sender object </param> 
+/// <param name=”e”> xaml routed event </param> 
+/// <returns> void </returns>
+/// </summary>
 void VEELB::MainPage::ScreenSaverGrid_Tapped(Platform::Object^ sender, Windows::UI::Xaml::Input::TappedRoutedEventArgs^ e)
 {
 	ScreenSaverGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
 	MainGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;
 }
 
+/// <summary>
+/// toggles visibility of history list box
+/// <param name=”sender”> sender object </param> 
+/// <param name=”e”> xaml routed event </param> 
+/// <returns> void </returns>
+/// </summary>
 void VEELB::MainPage::toggleHistoryBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
 	if (historyGrid->Visibility == Windows::UI::Xaml::Visibility::Visible)
@@ -712,6 +806,12 @@ void VEELB::MainPage::toggleHistoryBtn_Click(Platform::Object^ sender, Windows::
 	}
 }
 
+/// <summary>
+/// Button click event for start splash screen - selects USB serial device, creates necessary tasks, sets correct UI Grid, reads config
+/// <param name=”sender”> sender object </param> 
+/// <param name=”e”> xaml routed event </param> 
+/// <returns> void </returns>
+/// </summary>
 void VEELB::MainPage::startBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
 	Device^ selectedDevice = static_cast<Device^>(_availableDevices->GetAt(0));
@@ -727,50 +827,87 @@ void VEELB::MainPage::startBtn_Click(Platform::Object^ sender, Windows::UI::Xaml
 	ReadTextFromFile(1);
 }
 
-
+/// <summary>
+/// Button click event for job number screen, sets proper UI Grid
+/// <param name=”sender”> sender object </param> 
+/// <param name=”e”> xaml routed event </param> 
+/// <returns> void </returns>
+/// </summary>
 void VEELB::MainPage::exitJobNumberBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
 	JobNumberGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
 	MainGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;
-
-	// TODO: retrieve last job 
 }
 
-
+/// <summary>
+/// Button click event -- not yet implemented
+/// <param name=”sender”> sender object </param> 
+/// <param name=”e”> xaml routed event </param> 
+/// <returns> void </returns>
+/// </summary>
 void VEELB::MainPage::sleepBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
 	MainGrid->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
 	ScreenSaverGrid->Visibility = Windows::UI::Xaml::Visibility::Visible;
 	screenSaverImg->Visibility = Windows::UI::Xaml::Visibility::Visible;
 
-
 	screenSaverAnimation();
 }
 
 // Settings flyout 
+/// <summary>
+/// Button click event toggles splitter visibility
+/// <param name=”sender”> sender object </param> 
+/// <param name=”e”> xaml routed event </param> 
+/// <returns> void </returns>
+/// </summary>
 void MainPage::settingsWebcamBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
 	WebcamSplitter->IsPaneOpen = !WebcamSplitter->IsPaneOpen;
 }
 
+/// <summary>
+/// Updates lens crosshair colour
+/// <param name=”sender”> sender object </param> 
+/// <param name=”e”> RangeBaseValueChangedEventArgs </param> 
+/// <returns> void </returns>
+/// </summary>
 void VEELB::MainPage::redSlider_ValueChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::Primitives::RangeBaseValueChangedEventArgs^ e)
 {
 	if (redSlider->Value > 255) redSlider->Value = 255; // touch slider is a little wierd when at max
 	redSldr = redSlider->Value;
 }
 
+/// <summary>
+/// Updates lens crosshair colour
+/// <param name=”sender”> sender object </param> 
+/// <param name=”e”> RangeBaseValueChangedEventArgs </param> 
+/// <returns> void </returns>
+/// </summary>
 void VEELB::MainPage::greenSlider_ValueChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::Primitives::RangeBaseValueChangedEventArgs^ e)
 {
 	if (greenSlider->Value > 255) greenSlider->Value = 255; // touch slider is a little wierd when at max
 	greenSldr = greenSlider->Value;
 }
 
+/// <summary>
+/// Updates lens crosshair colour
+/// <param name=”sender”> sender object </param> 
+/// <param name=”e”> RangeBaseValueChangedEventArgs </param> 
+/// <returns> void </returns>
+/// </summary>
 void VEELB::MainPage::blueSlider_ValueChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::Primitives::RangeBaseValueChangedEventArgs^ e)
 {
 	if (blueSlider->Value > 255) blueSlider->Value = 255; // touch slider is a little wierd when at max
 	blueSldr = blueSlider->Value;
 }
 
+/// <summary>
+/// Updates lens crosshair thickness
+/// <param name=”sender”> sender object </param> 
+/// <param name=”e”> RangeBaseValueChangedEventArgs </param> 
+/// <returns> void </returns>
+/// </summary>
 void VEELB::MainPage::thicknessSlider_ValueChanged(Platform::Object^ sender, Windows::UI::Xaml::Controls::Primitives::RangeBaseValueChangedEventArgs^ e)
 {
 	if (thicknessSlider->Value > 8) thicknessSlider->Value = 8; // touch slider is a little wierd when at max
@@ -779,6 +916,12 @@ void VEELB::MainPage::thicknessSlider_ValueChanged(Platform::Object^ sender, Win
 
 // Serial comms
 // UI toggle
+/// <summary>
+/// Either connects or disconnects serial comms depending on the present state.
+/// <param name=”sender”> sender object </param> 
+/// <param name=”e”> xaml routed event </param> 
+/// <returns> void </returns>
+/// </summary>
 void VEELB::MainPage::toggleSerialBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
 	if (_serialPort != nullptr)
@@ -800,16 +943,18 @@ void VEELB::MainPage::toggleSerialBtn_Click(Platform::Object^ sender, Windows::U
 	}
 }
 
+/// <summary>
+/// When serial comms is disconnected, job number screen is disabled
+/// <returns> void </returns>
+/// </summary>
 void VEELB::MainPage::ToggleEnableMainGridBtns()
 {
-	//initBtn->IsEnabled = !initBtn->IsEnabled;
 	enterJobNumberBtn->IsEnabled = !enterJobNumberBtn->IsEnabled;
-	/*settingsBtn->IsEnabled = !settingsBtn->IsEnabled;
-	toggleHistoryBtn->IsEnabled = !toggleHistoryBtn->IsEnabled;*/
 }
 
 /// <summary>
 /// Finds all serial devices available on the device and populates a list with the Ids of each device.
+/// <returns> void </returns>
 /// </summary>
 void MainPage::ListAvailablePorts(void)
 {
@@ -831,20 +976,9 @@ void MainPage::ListAvailablePorts(void)
 		});
 }
 
-/// <Summary>
-/// Determines if the device Id corresponds to the Tracer or another type of serial device since more
-/// devices may be connected to the Pi in the future for the company as they add features to their overall
-/// system of making lesnes
-bool MainPage::IsTracer(Platform::String^ id)
-{
-	if (id == "\\")
-		return true;
-	else
-		return false;
-}
-
 /// <summary>
 /// An asynchronous operation that returns a collection of DeviceInformation objects for all serial devices detected on the device.
+/// <returns> DeviceInformationCollection </returns>
 /// </summary>
 Windows::Foundation::IAsyncOperation<Windows::Devices::Enumeration::DeviceInformationCollection ^> ^MainPage::ListAvailableSerialDevicesAsync(void)
 {
@@ -857,6 +991,9 @@ Windows::Foundation::IAsyncOperation<Windows::Devices::Enumeration::DeviceInform
 
 /// <summary>
 /// Creates a task chain that attempts connect to a serial device asynchronously. 
+/// <param name=”device1”> current serial device </param> 
+/// <param name=”cancellationToken”> token to cancel transaction </param> 
+/// <returns> concurrent task </returns>
 /// </summary
 Concurrency::task<void> MainPage::ConnectToSerialDeviceAsync(Windows::Devices::Enumeration::DeviceInformation ^device1, Concurrency::cancellation_token cancellationToken)
 {
@@ -902,6 +1039,9 @@ Concurrency::task<void> MainPage::ConnectToSerialDeviceAsync(Windows::Devices::E
 
 /// <summary>
 /// Returns a task that sends the outgoing data from the sendText textbox to the output stream. 
+/// <param name=”jobNum”> current job number to send </param> 
+/// <param name=”cancellationToken”> token to cancel transaction </param> 
+/// <returns> concurrent task </returns>
 /// </summary
 Concurrency::task<void> MainPage::WriteAsync(Concurrency::cancellation_token cancellationToken, int jobNum)
 {
@@ -926,6 +1066,11 @@ Concurrency::task<void> MainPage::WriteAsync(Concurrency::cancellation_token can
 	});
 }
 
+/// <summary>
+/// to push job number digit by digit 
+/// <param name=”value”> value to separate </param> 
+/// <returns> int vector </returns>
+/// </summary>
 vector<int> MainPage::SeparateIntoDigits(unsigned int value)
 {
 	vector<int> digits;
@@ -937,6 +1082,11 @@ vector<int> MainPage::SeparateIntoDigits(unsigned int value)
 	return digits;
 }
 
+/// <summary>
+/// Checksum for validation with tracer
+/// <param name=”digits”> int vector of digits </param> 
+/// <returns> checksum int </returns>
+/// </summary>
 int MainPage::CreateChecksum(vector<int> digits)
 {
 	int sum = 0;
@@ -949,6 +1099,8 @@ int MainPage::CreateChecksum(vector<int> digits)
 
 /// <summary>
 /// Returns a task that reads in the data from the input stream
+/// <param name=”cancellationToken”> token to cancel transaction </param> 
+/// <returns> concurrent task </returns>
 /// </summary
 Concurrency::task<void> VEELB::MainPage::ReadAsync(Concurrency::cancellation_token cancellationToken)
 {
@@ -985,6 +1137,10 @@ Concurrency::task<void> VEELB::MainPage::ReadAsync(Concurrency::cancellation_tok
 	});
 }
 
+/// <summary>
+/// Updates jobs location when location is recieved
+/// <returns> void </returns>
+/// </summary>
 void VEELB::MainPage::UpdateLocation()
 {
 	Platform::String^ location = locationTextBlk->Text;
@@ -997,12 +1153,12 @@ void VEELB::MainPage::UpdateLocation()
 	job->setYPosition(_wtol(y.data()));
 
 	consoleEntries[jobCtr-1].setJob(job);
-
-	//ToggleEnableMainGridBtns();
 }
 
 /// <summary>
 /// Returns the sum of the data bits being sent so a checksum value can be sent to the TRacer for error control
+/// <param name=”message”> message </param> 
+/// <returns> int </returns>
 /// </sumary
 int CreateChecksum(Platform::String^ message)
 {
@@ -1019,6 +1175,7 @@ void VEELB::MainPage::CancelReadTask(void)
 
 /// <summary>
 /// Closes the comport currently connected
+/// <returns> VOID </returns>
 /// </summary
 void VEELB::MainPage::CloseDevice(void)
 {
@@ -1035,6 +1192,7 @@ void VEELB::MainPage::CloseDevice(void)
 
 /// <summary>
 /// Event handler that starts listening the serial port input
+/// <returns> void </returns>
 /// </summary
 void VEELB::MainPage::Listen()
 {
@@ -1058,6 +1216,12 @@ void VEELB::MainPage::Listen()
 	}
 }
 
+/// <summary>
+/// Device constructor
+/// <param name=”id”> identification for device </param> 
+/// <param name=”deviceInfo”> device information </param> 
+/// <returns> device </returns>
+/// </summary>
 Device::Device(Platform::String^ id, Windows::Devices::Enumeration::DeviceInformation^ deviceInfo)
 {
 	_id = id;
@@ -1065,6 +1229,11 @@ Device::Device(Platform::String^ id, Windows::Devices::Enumeration::DeviceInform
 }
 
 //File Access
+/// <summary>
+/// creates file on disk depending on type
+/// <param name=”fileType”> type of file </param> 
+/// <returns> void </returns>
+/// </summary>
 void MainPage::CreateFile(int fileType)
 {
 	//null pointer allows for access to the current user
@@ -1115,6 +1284,12 @@ void MainPage::CreateFile(int fileType)
 	}
 }
 
+/// <summary>
+/// Writes text to file depending on type
+/// <param name=”fileType”> type of file </param> 
+/// <param name=”inputText”> string to right to the file </param> 
+/// <returns> bool </returns>
+/// </summary>
 bool MainPage::WriteTextToFile(int fileType, Platform::String^ inputText)
 {
 	if (fileType == 1)
@@ -1146,7 +1321,6 @@ bool MainPage::WriteTextToFile(int fileType, Platform::String^ inputText)
 		}
 		else
 		{
-			//// TODO: notify file does not exist error
 			return false;
 		}
 	}
@@ -1167,7 +1341,6 @@ bool MainPage::WriteTextToFile(int fileType, Platform::String^ inputText)
 					}
 					catch (COMException^ ex)
 					{
-						// TODO: notify error
 						return false;
 					}
 				});
@@ -1179,7 +1352,6 @@ bool MainPage::WriteTextToFile(int fileType, Platform::String^ inputText)
 		}
 		else
 		{
-			//// TODO: notify file does not exist error
 			return false;
 		}
 	}
@@ -1189,6 +1361,11 @@ bool MainPage::WriteTextToFile(int fileType, Platform::String^ inputText)
 	}
 }
 
+/// <summary>
+/// Reads text from file depending on type
+/// <param name=”fileType”> type of file </param> 
+/// <returns> void </returns>
+/// </summary>
 void MainPage::ReadTextFromFile(int fileType)
 {
 	if (fileType == 1)
@@ -1202,20 +1379,15 @@ void MainPage::ReadTextFromFile(int fileType)
 				{
 					Platform::String^ fileContent = task.get();
 					configTextBlk->Text = fileContent;
-					//return fileContent;
 				}
 				catch (COMException^ ex)
 				{
-					// TODO: notify error
 					Platform::String^ fileError = "Error";
-					//return fileError;
 				}
 			});
 		}
 		else
 		{
-			// TODO: notify file does not exist error
-			//return "Error";
 		}
 	}
 	else if (fileType == 2)
@@ -1229,20 +1401,15 @@ void MainPage::ReadTextFromFile(int fileType)
 				{
 					Platform::String^ fileContent = task.get();
 					Status->Text = fileContent;
-					//return fileContent;
 				}
 				catch (COMException^ ex)
 				{
-					// TODO: notify error
 					Platform::String^ fileError = "Error";
-					//return fileError;
 				}
 			});
 		}
 		else
 		{
-			// TODO: notify file does not exist error
-			//return "Error";
 		}
 	}
 	else
@@ -1250,388 +1417,3 @@ void MainPage::ReadTextFromFile(int fileType)
 
 	}
 }
-
-void VEELB::MainPage::settingsBtn_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
-{
-	initBtn_Click(sender, e);
-	WebcamSplitter->IsPaneOpen = true;
-}
-
-// Serial sample code
-
-
-
-//#include "pch.h"
-//#include "MainPage.xaml.h"
-//
-//using namespace SerialSampleCpp;
-//
-//using namespace Platform;
-//using namespace Windows::Foundation;
-//using namespace Windows::Foundation::Collections;
-//using namespace Windows::UI::Xaml;
-//using namespace Windows::UI::Xaml::Controls;
-//using namespace Windows::UI::Xaml::Controls::Primitives;
-//using namespace Windows::UI::Xaml::Data;
-//using namespace Windows::UI::Xaml::Input;
-//using namespace Windows::UI::Xaml::Media;
-//using namespace Windows::UI::Xaml::Navigation;
-//
-//// The Blank Page item template is documented at http://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
-//
-//bool read = false;
-//
-//MainPage::MainPage()
-//{
-//	InitializeComponent();
-//
-//	comPortInput->IsEnabled = false;
-//	sendTextButton->IsEnabled = false;
-//	_availableDevices = ref new Platform::Collections::Vector<Platform::Object^>();
-//
-//	ListAvailablePorts();
-//}
-//
-///// <summary>
-///// Finds all serial devices available on the device and populates a ListBox with the Ids of each device.
-///// </summary>
-//void MainPage::ListAvailablePorts(void)
-//{
-//	cancellationTokenSource = new Concurrency::cancellation_token_source();
-//
-//	//using asynchronous operation, get a list of serial devices available on this device
-//	Concurrency::create_task(ListAvailableSerialDevicesAsync()).then([this](Windows::Devices::Enumeration::DeviceInformationCollection ^serialDeviceCollection)
-//	{
-//		Windows::Devices::Enumeration::DeviceInformationCollection ^_deviceCollection = serialDeviceCollection;
-//
-//		// start with an empty list
-//		_availableDevices->Clear();
-//
-//		status->Text = "Select a device and connect";
-//
-//		for (auto &&device : _deviceCollection)
-//		{
-//			_availableDevices->Append(ref new Device(device->Id, device));
-//		}
-//
-//		// this will populate the ListBox with our available device Ids.
-//		DeviceListSource->Source = AvailableDevices;
-//
-//		comPortInput->IsEnabled = true;
-//		ConnectDevices->SelectedIndex = -1;
-//	});
-//}
-//
-///// <summary>
-///// An asynchronous operation that returns a collection of DeviceInformation objects for all serial devices detected on the device.
-///// </summary>
-//Windows::Foundation::IAsyncOperation<Windows::Devices::Enumeration::DeviceInformationCollection ^> ^MainPage::ListAvailableSerialDevicesAsync(void)
-//{
-//	// Construct AQS String for all serial devices on system
-//	Platform::String ^serialDevices_aqs = Windows::Devices::SerialCommunication::SerialDevice::GetDeviceSelector();
-//
-//	// Identify all paired devices satisfying query
-//	return Windows::Devices::Enumeration::DeviceInformation::FindAllAsync(serialDevices_aqs);
-//}
-//
-///// <summary>
-///// Creates a task chain that attempts connect to a serial device asynchronously. 
-///// </summary
-//Concurrency::task<void> MainPage::ConnectToSerialDeviceAsync(Windows::Devices::Enumeration::DeviceInformation ^device, Concurrency::cancellation_token cancellationToken)
-//{
-//	return create_task(Windows::Devices::SerialCommunication::SerialDevice::FromIdAsync(device->Id), cancellationToken)
-//		.then([this](Windows::Devices::SerialCommunication::SerialDevice ^serial_device)
-//	{
-//		try
-//		{
-//			_serialPort = serial_device;
-//
-//			// Disable the 'Connect' button 
-//			comPortInput->IsEnabled = false;
-//			Windows::Foundation::TimeSpan _timeOut;
-//			_timeOut.Duration = 10000000L;
-//
-//			// Configure serial settings
-//			_serialPort->WriteTimeout = _timeOut;
-//			_serialPort->ReadTimeout = _timeOut;
-//			_serialPort->BaudRate = 9600;
-//			_serialPort->Parity = Windows::Devices::SerialCommunication::SerialParity::None;
-//			_serialPort->StopBits = Windows::Devices::SerialCommunication::SerialStopBitCount::One;
-//			_serialPort->DataBits = 8;
-//			_serialPort->Handshake = Windows::Devices::SerialCommunication::SerialHandshake::None;
-//
-//			// Display configured settings
-//			status->Text = "Serial port configured successfully: ";
-//			status->Text += _serialPort->BaudRate + "-";
-//			status->Text += _serialPort->DataBits + "-";
-//			status->Text += _serialPort->Parity.ToString() + "-";
-//			status->Text += _serialPort->StopBits.ToString();
-//
-//			// setup our data reader for handling incoming data
-//			_dataReaderObject = ref new Windows::Storage::Streams::DataReader(_serialPort->InputStream);
-//			_dataReaderObject->InputStreamOptions = Windows::Storage::Streams::InputStreamOptions::Partial;
-//
-//			// setup our data writer for handling outgoing data
-//			_dataWriterObject = ref new Windows::Storage::Streams::DataWriter(_serialPort->OutputStream);
-//
-//			// Setting this text will trigger the event handler that runs asynchronously for reading data from the input stream
-//			rcvdText->Text = "Waiting for data...";
-//
-//			sendTextButton->IsEnabled = true;
-//
-//			Listen();
-//		}
-//		catch (Platform::Exception ^ex)
-//		{
-//			status->Text = "Error connecting to device!\nsendTextButton_Click: " + ex->Message;
-//			// perform any cleanup needed
-//			CloseDevice();
-//		}
-//	});
-//}
-//
-///// <summary>
-///// Returns a task that sends the outgoing data from the sendText textbox to the output stream. 
-///// </summary
-//Concurrency::task<void> MainPage::WriteAsync(Concurrency::cancellation_token cancellationToken)
-//{
-//	//_dataWriterObject->WriteString(sendText->Text);
-//	srand(time(NULL));
-//
-//	/* generate secret number between 1 and 10: */
-//	int x = 0;
-//	int y = 0;
-//
-//	//_dataWriterObject->WriteString("000" + x.ToString() + y.ToString() + "000");
-//
-//	Platform::String^ rcvdString = rcvdText->Text;
-//
-//	std::wstring rcvd = rcvdString->Data();
-//
-//	//int spacePos = str.find(' ');
-//	rcvd = rcvd.substr(3, 6);
-//	int jobNum = _wtol(rcvd.data());
-//
-//	switch (jobNum)
-//	{
-//	case 111111:
-//		x = 100;
-//		y = 100;
-//		break;
-//	case 222222:
-//		x = 200;
-//		y = 200;
-//		break;
-//	case 333333:
-//		x = 150;
-//		y = 150;
-//		break;
-//	case 444444:
-//		x = 105;
-//		y = 200;
-//		break;
-//	case 555555:
-//		x = 0;
-//		y = 0;
-//		break;
-//	default:
-//		x = 200;
-//		y = 105;
-//		break;
-//	}
-//
-//	_dataWriterObject->WriteString("000");
-//	_dataWriterObject->WriteString(x.ToString());
-//	_dataWriterObject->WriteString(y.ToString());
-//	_dataWriterObject->WriteString("000");
-//
-//	return concurrency::create_task(_dataWriterObject->StoreAsync(), cancellationToken).then([this](unsigned int bytesWritten)
-//	{
-//		if (bytesWritten > 0)
-//		{
-//			status->Text = sendText->Text + ", ";
-//			status->Text += "bytes written successfully!";
-//		}
-//		sendText->Text = "";
-//	});
-//}
-//
-///// <summary>
-///// Returns a task that reads in the data from the input stream
-///// </summary
-//Concurrency::task<void> MainPage::ReadAsync(Concurrency::cancellation_token cancellationToken)
-//{
-//	unsigned int _readBufferLength = 1024;
-//
-//	return concurrency::create_task(_dataReaderObject->LoadAsync(_readBufferLength), cancellationToken).then([this](unsigned int bytesRead)
-//	{
-//		if (bytesRead > 0)
-//		{
-//			//rcvdText->Text = _dataReaderObject->ReadByte().ToString;
-//			//wstring_convert<std::codecvt_utf8<wchar_t>> converter;
-//			rcvdText->Text = "";
-//			Platform::String^ retval;
-//			for (int i = 0; i < bytesRead; i++)
-//			{
-//				byte temp = _dataReaderObject->ReadByte();// .ToString;
-//														  //	string mystr = temp.ToString;
-//														  //wstring intermediateForm = converter.from_bytes(temp);
-//														  //retval = ref new Platform::String(intermediateForm.c_str());
-//				rcvdText->Text += temp;
-//
-//				read = true;
-//			}
-//
-//
-//
-//			status->Text = "bytes read successfully!";
-//		}
-//
-//
-//		/*
-//		Dynamically generate repeating tasks via "recursive" task creation - "recursively" call Listen() at the end of the continuation chain.
-//		The "recursive" call is not true recursion. It will not accumulate stack since every recursive is made in a new task.
-//		*/
-//
-//		// start listening again after done with this chunk of incoming data
-//		Listen();
-//	});
-//
-//}
-//
-///// <summary>
-///// Initiates task cancellation
-///// </summary
-//void MainPage::CancelReadTask(void)
-//{
-//	cancellationTokenSource->cancel();
-//}
-//
-///// <summary>
-///// Closes the comport currently connected
-///// </summary
-//void MainPage::CloseDevice(void)
-//{
-//	delete(_dataReaderObject);
-//	_dataReaderObject = nullptr;
-//
-//	delete(_dataWriterObject);
-//	_dataWriterObject = nullptr;
-//
-//	delete(_serialPort);
-//	_serialPort = nullptr;
-//
-//	comPortInput->IsEnabled = true;
-//	sendTextButton->IsEnabled = false;
-//	rcvdText->Text = "";
-//}
-//
-///// <summary>
-///// Event handler that is triggered when the user clicks on the "Connect" button. 
-////  Attempts to connect to the serial device that the user selected.
-///// </summary
-//void MainPage::comPortInput_Click(Object^ sender, RoutedEventArgs^ e)
-//{
-//	auto selectionIndex = ConnectDevices->SelectedIndex;
-//
-//	if (selectionIndex < 0)
-//	{
-//		status->Text = L"Select a device and connect";
-//		return;
-//	}
-//
-//	Device^ selectedDevice = static_cast<Device^>(_availableDevices->GetAt(selectionIndex));
-//	Windows::Devices::Enumeration::DeviceInformation ^entry = selectedDevice->DeviceInfo;
-//
-//	concurrency::create_task(ConnectToSerialDeviceAsync(entry, cancellationTokenSource->get_token()));
-//}
-//
-///// <summary>
-///// Event handler that is triggered when the user clicks the "WRITE" button.
-///// Sends the characters located in the sendText TextBox.
-///// </summary
-//void MainPage::sendTextButton_Click(Object^ sender, RoutedEventArgs^ e)
-//{
-//	if (_serialPort != nullptr)
-//	{
-//		try
-//		{
-//			if (sendText->Text->Length() > 0)
-//			{
-//				WriteAsync(cancellationTokenSource->get_token());
-//			}
-//			else
-//			{
-//				status->Text = "Enter the text you want to write and then click on 'WRITE'";
-//			}
-//		}
-//		catch (Platform::Exception ^ex)
-//		{
-//			status->Text = "sendTextButton_Click: " + ex->Message;
-//		}
-//	}
-//	else
-//	{
-//		status->Text = "Select a device and connect";
-//	}
-//}
-//
-///// <summary>
-///// Event handler that starts listening the serial port input
-///// </summary
-//void MainPage::Listen()
-//{
-//	try
-//	{
-//		if (_serialPort != nullptr)
-//		{
-//			// calling task.wait() is not allowed in Windows Runtime STA (Single Threaded Apartment) threads due to blocking the UI.
-//			concurrency::create_task(ReadAsync(cancellationTokenSource->get_token()));
-//
-//			if (read)
-//			{
-//				WriteAsync(cancellationTokenSource->get_token());
-//				read = false;
-//			}
-//		}
-//	}
-//	catch (Platform::Exception ^ex)
-//	{
-//		if (ex->GetType()->FullName == "TaskCanceledException")
-//		{
-//			status->Text = "Reading task was cancelled, closing device and cleaning up";
-//			CloseDevice();
-//		}
-//		else
-//		{
-//			status->Text = ex->Message;
-//		}
-//	}
-//}
-//
-///// <summary>
-///// Event handler closing the currently connected serial device
-///// </summary
-//void MainPage::closeDevice_Click(Object^ sender, RoutedEventArgs^ e)
-//{
-//	try
-//	{
-//		status->Text = "";
-//		CancelReadTask();
-//		CloseDevice();
-//		ListAvailablePorts();
-//	}
-//	catch (Platform::Exception ^ex)
-//	{
-//		status->Text = ex->Message;
-//	}
-//}
-//
-///// <summary>
-///// Constructor for the Device class
-///// </summary
-//Device::Device(Platform::String^ id, Windows::Devices::Enumeration::DeviceInformation^ deviceInfo)
-//{
-//	_id = id;
-//	_deviceInformation = deviceInfo;
-//}
