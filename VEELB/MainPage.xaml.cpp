@@ -130,12 +130,6 @@ void cvVideoTask()
 	cam.release();
 }
 
-struct darkCoords
-{
-	int row;
-	int col;
-};
-
 int seuil = 20;
 /// <summary>
 /// This function takes in the current and last frames, compares them to eachother to determine if there is motion, if there is 
@@ -183,6 +177,19 @@ void Compare(Mat frame, Mat oldFrame, Mat grayScale)
 				compareCtr++;
 			}
 		}
+	}
+
+	// Grid display
+	int max = frame.rows / 100;
+	for (int i = 0; i <= max; i++)
+	{
+		cv::line(frame, cv::Point((i * 100) + 100, 0), cv::Point((i * 100) + 100, frame.rows), Scalar(190, 190, 190), 0.5);
+	}
+
+	max = frame.cols / 100;
+	for (int i = 0; i <= max; i++)
+	{
+		cv::line(frame, cv::Point(0, (i * 100) + 100), cv::Point(frame.cols, (i * 100) + 100), Scalar(190, 190, 190), 0.5);
 	}
 
 	if (compareCtr > 1000)
@@ -246,7 +253,7 @@ void Compare(Mat frame, Mat oldFrame, Mat grayScale)
 
 		Platform::String^ lensLocationText = "Lens Location (" + midX.ToString() + ", " + midY.ToString() + ")";
 		cv::String lensLocationTextS = convertPlatformToCV(lensLocationText); // location text
-		cv::putText(frame, lensLocationTextS, cv::Point(15, 420), FONT_HERSHEY_COMPLEX_SMALL, 0.8, Scalar(0, 0, 0), 1.25, CV_AA);
+		cv::putText(frame, lensLocationTextS, cv::Point(15, 445), FONT_HERSHEY_COMPLEX_SMALL, 0.8, Scalar(0, 0, 0), 1.25, CV_AA);
 	}
 
 	// Target location
@@ -255,7 +262,7 @@ void Compare(Mat frame, Mat oldFrame, Mat grayScale)
 	
 	Platform::String^ locationText = "Target Location (" + xPos.ToString() + ", " + yPos.ToString() + ")";
 	cv::String locationTextS = convertPlatformToCV(locationText); // location text
-	cv::putText(frame, locationTextS, cv::Point(15, 400), FONT_HERSHEY_COMPLEX_SMALL, 0.8, Scalar(0, 0, 0), 1.25, CV_AA);
+	cv::putText(frame, locationTextS, cv::Point(15, 425), FONT_HERSHEY_COMPLEX_SMALL, 0.8, Scalar(0, 0, 0), 1.25, CV_AA);
 }
 
 /// <summary>
